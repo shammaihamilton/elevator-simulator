@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SimulationLoop } from '../SimulationLoop';
-import { GlobalSystemState, ElevatorDirection, DispatchStrategy } from '../../types/enums';
+import { GlobalSystemState, DispatchStrategy } from '../../types/enums';
 
 describe('SimulationLoop', () => {
   let simulationLoop: SimulationLoop;
