@@ -1,90 +1,155 @@
-import { MinHeap } from '../data-structures/MinHeap';
-import { isMovingDirection } from '../utils/elevatorDirectionUtils';
-import { generateId } from '../utils/idGenerator';
-import type { 
-  Elevator, 
-  PassengerRequest, 
+// src/core/ElevatorManager.ts
+import { MinHeap } from "../data-structures/MinHeap";
+import { generateId } from "../utils/idGenerator";
+import type {
+  Elevator,
+  PassengerRequest,
   Button,
   BuildingConfig,
-  ElevatorSystem 
-} from '../types/interfaces';
+  ElevatorSystem,
+} from "../types/interfaces";
 import {
   ElevatorDirection,
   ElevatorState,
-  ElevatorDoorState,
+  ElevatorDoorState, // Added for boardWaitingPassengers
   ButtonState,
   ButtonType,
   GlobalSystemState,
-  RequestStatus
-} from '../types/enums';
+  RequestStatus,
+} from "../types/enums";
+import { ElevatorFSM } from "./Elevator"; // Corrected import to ElevatorFSM
+import { RequestTimingData } from "./RequestTimingData";
+import { passengerRequestComparator } from "../utils/comparators";
 
 export class ElevatorManager {
-  public systemState: ElevatorSystem;
-  private lastTickTimestamp: number = 0;
+  private systemState: ElevatorSystem;
+  private static instance: ElevatorManager | null = null;
+
+  /**
+   * Returns the singleton instance of ElevatorManager.
+   */
+  public static getInstance(): ElevatorManager {
+    if (!ElevatorManager.instance) {
+      throw new Error("ElevatorManager instance has not been initialized.");
+    }
+    return ElevatorManager.instance;
+  }
+
+  /**
+   * Initializes the singleton instance of ElevatorManager.
+   */
+  public static initializeInstance(config: BuildingConfig): void {
+    if (!ElevatorManager.instance) {
+      ElevatorManager.instance = new ElevatorManager(config);
+    } else {
+      throw new Error("ElevatorManager instance is already initialized.");
+    }
+  }
+
+  /**
+   * Resets the singleton instance. Should only be used during cleanup/unmount.
+   */
+  public static resetInstance(): void {
+    ElevatorManager.instance = null;
+  }
 
   constructor(config: BuildingConfig) {
+    if (ElevatorManager.instance) {
+      throw new Error("ElevatorManager instance already exists. Use getInstance() to access it.");
+    }
+
+    const validatedConfig = {
+      ...config,
+      initialFloor: config.initialFloor ?? 0,
+      simulationTickMs: config.simulationTickMs ?? 100,
+    };
+
+    if (validatedConfig.numberOfFloors <= 0)
+      throw new Error("Number of floors must be positive");
+    if (validatedConfig.numberOfElevators <= 0)
+      throw new Error("Number of elevators must be positive");
+    if (validatedConfig.elevatorCapacity <= 0)
+      throw new Error("Elevator capacity must be positive");
+    if (
+      validatedConfig.initialFloor < 0 ||
+      validatedConfig.initialFloor >= validatedConfig.numberOfFloors
+    ) {
+      throw new Error("Initial floor must be within valid floor range");
+    }
+
     this.systemState = {
-      config,
+      config: validatedConfig,
       elevators: [],
       pendingRequests: new MinHeap<PassengerRequest>(
-        (a, b) => { // Prioritize by priority, then by timestamp
-          if (a.priority !== b.priority) {
-            return a.priority - b.priority;
-          }
-          return a.requestTimestamp - b.requestTimestamp;
-        }
+        passengerRequestComparator
       ),
-      buttons: this.initializeButtons(config), // Basic button initialization
-      currentTime: 0, // Simulation ticks
+      buttons: this.initializeButtons(validatedConfig),
+      currentTime: 0,
       globalState: GlobalSystemState.NORMAL,
       simulationSpeedFactor: 1,
     };
+
+    ElevatorManager.instance = this;
     this.initializeElevators();
-    this.lastTickTimestamp = Date.now();
   }
 
   private initializeElevators(): void {
-    for (let i = 0; i < this.systemState.config.numberOfElevators; i++) {
+    const config = this.systemState.config;
+    if (config.numberOfElevators <= 0)
+      throw new Error("Invalid number of elevators");
+
+    for (let i = 0; i < config.numberOfElevators; i++) {
       const elevatorId = generateId();
-      this.systemState.elevators.push({
-        id: elevatorId,
-        currentFloor: 0, // Assuming ground floor is 0
-        direction: ElevatorDirection.IDLE,
-        state: ElevatorState.IDLE,
-        doorState: ElevatorDoorState.CLOSED,
-        passengers: [],
-        upStops: new MinHeap<number>((a, b) => a - b),
-        downStops: new MinHeap<number>((a, b) => b - a), // Acts as MaxHeap for floors
-        targetFloor: null,
-        capacity: this.systemState.config.elevatorCapacity,
-        doorOpenTimer: 0,
-      });
+      const initialFloor = config.initialFloor ?? 0;
+
+      if (config.doorTransitionTimeMs <= 0)
+        throw new Error("Invalid door transition time");
+      if (config.doorOpenTimeMs <= 0) throw new Error("Invalid door open time");
+      if (config.floorTravelTimeMs <= 0)
+        throw new Error("Invalid floor travel time");
+
+      const elevator = new ElevatorFSM(
+        elevatorId,
+        config.elevatorCapacity,
+        initialFloor,
+        {
+          doorTransitionTimeMs: config.doorTransitionTimeMs,
+          doorOpenTimeMs: config.doorOpenTimeMs,
+          floorTravelTimeMs: config.floorTravelTimeMs,
+        },
+        this
+      );
+      this.systemState.elevators.push(elevator);
     }
   }
 
   private initializeButtons(config: BuildingConfig): Button[] {
     const buttons: Button[] = [];
-    // Floor call buttons
     for (let i = 0; i < config.numberOfFloors; i++) {
-      if (i < config.numberOfFloors - 1) { // No UP button on top floor
-        buttons.push({ id: `floor-${i}-call-up`, type: ButtonType.CALL_UP, floorNumber: i, state: ButtonState.RELEASED });
+      if (i < config.numberOfFloors - 1) {
+        buttons.push({
+          id: `floor-${i}-call-up`,
+          type: ButtonType.CALL_UP,
+          floorNumber: i,
+          state: ButtonState.RELEASED,
+        });
       }
-      if (i > 0) { // No DOWN button on ground floor
-        buttons.push({ id: `floor-${i}-call-down`, type: ButtonType.CALL_DOWN, floorNumber: i, state: ButtonState.RELEASED });
+      if (i > 0) {
+        buttons.push({
+          id: `floor-${i}-call-down`,
+          type: ButtonType.CALL_DOWN,
+          floorNumber: i,
+          state: ButtonState.RELEASED,
+        });
       }
     }
-    // Elevator internal buttons (could be done when elevators are initialized or per elevator)
-    // For simplicity, not adding all internal buttons here yet.
     return buttons;
   }
 
-  // --- Public API Methods ---
+  public getSimulationSpeedFactor(): number {
+    return this.systemState.simulationSpeedFactor;
+  }
 
-  /**
-   * Creates a passenger request when a floor button is pressed.
-   * For simplicity, this version assumes destination is known immediately.
-   * A more realistic model might queue a FloorCall, and destination is set upon boarding.
-   */
   public addPassengerRequestFromFloorCall(
     sourceFloor: number,
     destinationFloor: number,
@@ -92,29 +157,34 @@ export class ElevatorManager {
     priority: number = 10
   ): string {
     if (this.systemState.globalState !== GlobalSystemState.NORMAL) {
-        console.warn("System not normal, request ignored.");
-        return "";
+      console.warn("System not normal, request ignored during floor call.");
+      return "";
     }
+
     const request: PassengerRequest = {
       id: generateId(),
       sourceFloor,
       destinationFloor,
-      requestTimestamp: this.systemState.currentTime,
       status: RequestStatus.PENDING_ASSIGNMENT,
       priority,
+      timing: new RequestTimingData(this.systemState.currentTime),
     };
+
     this.systemState.pendingRequests.insert(request);
-    console.log(`Request ${request.id} added: F${sourceFloor} to F${destinationFloor}`);
+    console.log(
+      `Request ${request.id} added: F${sourceFloor} to F${destinationFloor} (Dir: ${requestedDirection})`
+    );
+
     const buttonId = `floor-${sourceFloor}-call-${requestedDirection.toLowerCase()}`;
     this.updateButtonState(buttonId, ButtonState.PRESSED);
 
     return request.id;
   }
 
-  /**
-   * Creates a passenger request from inside an elevator.
-   */
-  public addRequestFromElevatorPanel(elevatorId: string, destinationFloor: number): void {
+  public addRequestFromElevatorPanel(
+    elevatorId: string,
+    destinationFloor: number
+  ): void {
     if (this.systemState.globalState !== GlobalSystemState.NORMAL) return;
 
     const elevator = this.findElevator(elevatorId);
@@ -123,286 +193,311 @@ export class ElevatorManager {
       return;
     }
 
-    this.addStopToElevator(elevator, destinationFloor);
-    console.log(`Elevator ${elevatorId} panel: stop added for F${destinationFloor}`);
+    elevator.addStop(destinationFloor);
+    console.log(
+      `Elevator ${elevatorId} panel: stop added for F${destinationFloor}`
+    );
   }
 
-  /**
-   * Main simulation loop. Should be called repeatedly (e.g., via setInterval).
-   */
   public tick(): void {
-    if (this.systemState.globalState !== GlobalSystemState.NORMAL &&
-        this.systemState.globalState !== GlobalSystemState.FIRE_ALARM /* etc. handle special modes */) {
-        // In some non-normal states, simulation might be paused or elevators behave differently
-        return;
-    }
-
-    this.systemState.currentTime++; // Increment simulation tick
-
-    this.updateElevatorsState();
-    this.dispatchPendingRequests();
-  }
-
-  // --- Core Logic Methods ---
-
-  private updateElevatorsState(): void {
-    this.systemState.elevators.forEach(elevator => {
-      this.processElevatorLogic(elevator);
-    });
-  }
-
-  private processElevatorLogic(elevator: Elevator): void {
-    // Reduce door timer if active
-    if (elevator.doorOpenTimer && elevator.doorOpenTimer > 0) {
-      elevator.doorOpenTimer--;
-    }
-
-    switch (elevator.state) {
-      case ElevatorState.IDLE:
-        this.handleIdleElevator(elevator);
-        break;
-      case ElevatorState.MOVING_UP:
-      case ElevatorState.MOVING_DOWN:
-        this.handleMovingElevator(elevator);
-        break;
-      case ElevatorState.STOPPED_AT_FLOOR:
-        // This state implies we've decided to stop; transition to opening doors
-        elevator.state = ElevatorState.DOOR_OPENING;
-        elevator.doorState = ElevatorDoorState.OPENING;
-        elevator.doorOpenTimer = this.msToTicks(this.systemState.config.doorTransitionTimeMs);
-        break;
-      case ElevatorState.DOOR_OPENING:
-        if (elevator.doorOpenTimer === 0) {
-          elevator.state = ElevatorState.DOOR_OPEN;
-          elevator.doorState = ElevatorDoorState.OPEN;
-          elevator.doorOpenTimer = this.msToTicks(this.systemState.config.doorOpenTimeMs);
-          this.handlePassengerExchange(elevator); // Exchange passengers once doors are fully open
-        }
-        break;
-      case ElevatorState.DOOR_OPEN:
-        if (elevator.doorOpenTimer === 0) {
-          elevator.state = ElevatorState.DOOR_CLOSING;
-          elevator.doorState = ElevatorDoorState.CLOSING;
-          elevator.doorOpenTimer = this.msToTicks(this.systemState.config.doorTransitionTimeMs);
-        }
-        break;
-      case ElevatorState.DOOR_CLOSING:
-        if (elevator.doorOpenTimer === 0) {
-          elevator.doorState = ElevatorDoorState.CLOSED;
-          this.determineNextMoveForElevator(elevator); // Decide what to do after doors close
-        }
-        break;
-      // Other states like MAINTENANCE, OVERLOADED, EMERGENCY_STOP need specific handling
-    }
-  }
-
-  private handleIdleElevator(elevator: Elevator): void {
-    // If idle, try to find a target from its own queues first
-    this.determineNextMoveForElevator(elevator);
-    // If still idle, it will wait for dispatching logic to assign a task
-  }
-
-  private handleMovingElevator(elevator: Elevator): void {
-    if (elevator.targetFloor === null) {
-      this.determineNextMoveForElevator(elevator);
+    if (this.systemState.globalState !== GlobalSystemState.NORMAL) {
+      this.systemState.elevators.forEach((elevator) => {
+        elevator.update(this.systemState.currentTime);
+      });
       return;
     }
 
-    if (elevator.direction === ElevatorDirection.UP) {
-        elevator.currentFloor++;
-    } else if (elevator.direction === ElevatorDirection.DOWN) {
-        elevator.currentFloor--;
-    }
+    this.systemState.currentTime +=
+      this.systemState.config.simulationTickMs || 100;
 
-    if (elevator.currentFloor === elevator.targetFloor) {
-        elevator.state = ElevatorState.STOPPED_AT_FLOOR;
-        // Consume the stop from the queue
-        if (elevator.direction === ElevatorDirection.UP) {
-          if (elevator.upStops.peek() === elevator.currentFloor) elevator.upStops.extractMin();
-        } else if (elevator.direction === ElevatorDirection.DOWN) {
-          if (elevator.downStops.peek() === elevator.currentFloor) elevator.downStops.extractMin();
-        }
-        // Clear call button if this stop serviced it
-        this.clearCallButtonForFloor(elevator.currentFloor, elevator.direction);
-    }
-  }
-
-  private handlePassengerExchange(elevator: Elevator): void {
-    // Disembark passengers
-    elevator.passengers = elevator.passengers.filter(p => {
-      if (p.destinationFloor === elevator.currentFloor) {
-        console.log(`Passenger ${p.id} disembarked at F${elevator.currentFloor} from Elv ${elevator.id}`);
-        p.status = RequestStatus.COMPLETED;
-        p.dropoffTimestamp = this.systemState.currentTime;
-        return false; // Remove from elevator
-      }
-      return true;
+    this.systemState.elevators.forEach((elevator) => {
+      elevator.update(this.systemState.currentTime);
     });
 
-    // Board passengers
-    const requestsToBoard: PassengerRequest[] = [];
-    const tempPendingRequests = new MinHeap<PassengerRequest>(
-      (a, b) => { 
-        if (a.priority !== b.priority) {
-          return a.priority - b.priority;
-        }
-        return a.requestTimestamp - b.requestTimestamp;
-      }
+    this.boardWaitingPassengers();
+    this.assignNewRequestsToElevators();
+    this.cleanupCompletedRequests();
+  }
+
+  private boardWaitingPassengers(): void {
+    const requestsToKeep = new MinHeap<PassengerRequest>(
+      passengerRequestComparator
     );
-    
-    while(!this.systemState.pendingRequests.isEmpty()) {
-        const req = this.systemState.pendingRequests.extractMin()!;
+
+    while (!this.systemState.pendingRequests.isEmpty()) {
+      const request = this.systemState.pendingRequests.extractMin()!;
+
+      if (
+        request.status === RequestStatus.WAITING_FOR_PICKUP &&
+        request.assignedElevatorId
+      ) {
+        const elevator = this.findElevator(request.assignedElevatorId);
+
         if (
-            req.sourceFloor === elevator.currentFloor &&
-            req.assignedElevatorId === elevator.id &&
-            elevator.passengers.length < elevator.capacity &&
-            ( (isMovingDirection(elevator.direction) && this.requestMatchesDirection(req, elevator.direction)) || elevator.direction === ElevatorDirection.IDLE)
+          elevator &&
+          elevator.currentFloor === request.sourceFloor &&
+          (elevator.doorState === ElevatorDoorState.OPEN ||
+            elevator.doorState === ElevatorDoorState.OPENING)
         ) {
-            requestsToBoard.push(req);
-        } else {
-            tempPendingRequests.insert(req);
-        }
-    }
-    this.systemState.pendingRequests = tempPendingRequests;
+          console.log(
+            `Elevator ${elevator.id} at F${request.sourceFloor} (for request ${request.id}). Attempting to board.`
+          );
+          const boarded = elevator.boardPassenger(
+            request,
+            this.systemState.currentTime
+          );
 
-    requestsToBoard.forEach(req => {
-        if (elevator.passengers.length < elevator.capacity) {
-            req.status = RequestStatus.IN_TRANSIT;
-            req.pickupTimestamp = this.systemState.currentTime;
-            elevator.passengers.push(req);
-            this.addStopToElevator(elevator, req.destinationFloor);
-            console.log(`Passenger ${req.id} boarded Elv ${elevator.id} at F${elevator.currentFloor} to F${req.destinationFloor}`);
-            this.clearCallButtonForFloor(req.sourceFloor, this.getDirectionFromRequest(req));
-        } else {
-            console.log(`Elevator ${elevator.id} full, request ${req.id} cannot board.`);
-            req.assignedElevatorId = undefined;
-            req.status = RequestStatus.PENDING_ASSIGNMENT;
-            this.systemState.pendingRequests.insert(req);
+          if (boarded) {
+            console.log(
+              `Passenger for request ${request.id} (F${request.sourceFloor} to F${request.destinationFloor}) boarded elevator ${elevator.id}. Request status now IN_TRANSIT.`
+            );
+
+            const callDirection =
+              request.destinationFloor > request.sourceFloor
+                ? ElevatorDirection.UP
+                : ElevatorDirection.DOWN;
+            const buttonId = `floor-${
+              request.sourceFloor
+            }-call-${callDirection.toLowerCase()}`;
+
+            let otherActiveCallsForThisButton = false;
+            const allPotentiallyActiveRequests = requestsToKeep
+              .toArray()
+              .concat(this.systemState.pendingRequests.toArray());
+            // Also consider the current request if it wasn't the one being processed for this button state check
+            // However, since we are processing *this* request, we check others.
+
+            for (const otherReq of allPotentiallyActiveRequests) {
+              if (
+                otherReq.id !== request.id && // Don't check against itself
+                otherReq.sourceFloor === request.sourceFloor &&
+                (otherReq.destinationFloor > otherReq.sourceFloor
+                  ? ElevatorDirection.UP
+                  : ElevatorDirection.DOWN) === callDirection &&
+                (otherReq.status === RequestStatus.PENDING_ASSIGNMENT ||
+                  otherReq.status === RequestStatus.WAITING_FOR_PICKUP)
+              ) {
+                otherActiveCallsForThisButton = true;
+                break;
+              }
+            }
+            // Check the current request again if its status didn't change to IN_TRANSIT (though boardPassenger should do that)
+            // This logic might need further refinement for complex multi-call scenarios for the same button.
+            // Let's simplify: if *this* request was just boarded, assume its call is serviced *for now*.
+            if (!otherActiveCallsForThisButton) {
+              this.updateButtonState(buttonId, ButtonState.RELEASED);
+              console.log(`Button ${buttonId} released.`);
+            } else {
+              console.log(
+                `Button ${buttonId} not released, other calls still pending for this floor/direction.`
+              );
+            }
+          } else {
+            console.log(
+              `Elevator ${elevator.id} is full or cannot board passenger for request ${request.id} at F${request.sourceFloor}. Request remains WAITING_FOR_PICKUP.`
+            );
+          }
         }
+      }
+      requestsToKeep.insert(request); // Always re-add; status might have changed or it's for cleanup
+    }
+    this.systemState.pendingRequests = requestsToKeep;
+  }
+
+  private assignNewRequestsToElevators(): void {
+    const requestsToKeep = new MinHeap<PassengerRequest>(
+      passengerRequestComparator
+    );
+    const requestsThatWerePendingAssignment: PassengerRequest[] = [];
+
+    while (!this.systemState.pendingRequests.isEmpty()) {
+      const request = this.systemState.pendingRequests.extractMin()!;
+      if (request.status === RequestStatus.PENDING_ASSIGNMENT) {
+        requestsThatWerePendingAssignment.push(request);
+      } else {
+        requestsToKeep.insert(request);
+      }
+    }
+
+    requestsThatWerePendingAssignment.forEach((request) => {
+      const bestElevator = this.findBestElevatorForRequest(request);
+      if (bestElevator) {
+        request.status = RequestStatus.WAITING_FOR_PICKUP;
+        request.assignedElevatorId = bestElevator.id;
+        request.timing.markAssigned(this.systemState.currentTime);
+        bestElevator.addStop(request.sourceFloor);
+        console.log(
+          `Request ${request.id} (F${request.sourceFloor}) assigned to elevator ${bestElevator.id}. Status now WAITING_FOR_PICKUP.`
+        );
+      } else {
+        console.log(
+          `No suitable elevator found for request ${request.id} (F${request.sourceFloor}). Remains PENDING_ASSIGNMENT.`
+        );
+      }
+      requestsToKeep.insert(request);
     });
+
+    this.systemState.pendingRequests = requestsToKeep;
   }
 
-  /**
-   * Decides the next target floor and state for an elevator, typically after doors close or when idle.
-   */
-  private determineNextMoveForElevator(elevator: Elevator): void {
-    let nextTarget: number | undefined = undefined;
-
-    if (elevator.direction === ElevatorDirection.UP && !elevator.upStops.isEmpty()) {
-      nextTarget = elevator.upStops.peek();
-    } else if (elevator.direction === ElevatorDirection.DOWN && !elevator.downStops.isEmpty()) {
-      nextTarget = elevator.downStops.peek();
-    } else {
-      if (!elevator.upStops.isEmpty()) {
-        nextTarget = elevator.upStops.peek();
-        elevator.direction = ElevatorDirection.UP;
-      }
-      else if (!elevator.downStops.isEmpty()) {
-        nextTarget = elevator.downStops.peek();
-        elevator.direction = ElevatorDirection.DOWN;
-      }
-    }
-
-    if (nextTarget !== undefined) {
-      elevator.targetFloor = nextTarget;
-      if (elevator.currentFloor === elevator.targetFloor) {
-         elevator.state = ElevatorState.STOPPED_AT_FLOOR;
+  private cleanupCompletedRequests(): void {
+    const activeRequests = new MinHeap<PassengerRequest>(
+      passengerRequestComparator
+    );
+    while (!this.systemState.pendingRequests.isEmpty()) {
+      const request = this.systemState.pendingRequests.extractMin()!;
+      if (request.status !== RequestStatus.COMPLETED) {
+        activeRequests.insert(request);
       } else {
-         elevator.state = elevator.direction === ElevatorDirection.UP ? 
-           ElevatorState.MOVING_UP : 
-           ElevatorState.MOVING_DOWN;
+        console.log(
+          `Request ${request.id} (F${request.sourceFloor} to F${request.destinationFloor}) is COMPLETED and removed from manager's queue.`
+        );
       }
-    } else {
-      elevator.state = ElevatorState.IDLE;
-      elevator.direction = ElevatorDirection.IDLE;
-      elevator.targetFloor = null;
     }
+    this.systemState.pendingRequests = activeRequests;
   }
 
-  private dispatchPendingRequests(): void {
-    if (this.systemState.pendingRequests.isEmpty()) return;
-
-    const request = this.systemState.pendingRequests.peek(); // Look at highest priority
-    if (!request || request.assignedElevatorId) return; // Already assigned or no request
-
+  private findBestElevatorForRequest(
+    request: PassengerRequest
+  ): Elevator | null {
     let bestElevator: Elevator | null = null;
+    let bestScore = Infinity;
 
-    for (const elevator of this.systemState.elevators) {
-      if (elevator.state === ElevatorState.IDLE) {
+    this.systemState.elevators.forEach((elevator) => {
+      const score = this.calculateElevatorScore(elevator, request);
+      if (score < bestScore) {
+        bestScore = score;
         bestElevator = elevator;
-        break;
       }
-    }
-
-    if (bestElevator) {
-      const assignedRequest = this.systemState.pendingRequests.extractMin()!;
-      assignedRequest.assignedElevatorId = bestElevator.id;
-      assignedRequest.status = RequestStatus.WAITING_FOR_PICKUP;
-      this.addStopToElevator(bestElevator, assignedRequest.sourceFloor);
-
-      console.log(`Request ${assignedRequest.id} dispatched to Elevator ${bestElevator.id}`);
-
-      if (bestElevator.state === ElevatorState.IDLE) {
-        this.determineNextMoveForElevator(bestElevator);
-      }
-    }
+    });
+    return bestElevator;
   }
 
-  /**
-   * Helper to add a stop to the correct queue in an elevator.
-   */
-  private addStopToElevator(elevator: Elevator, floor: number): void {
-    if (elevator.direction === ElevatorDirection.UP) {
-      if (floor >= elevator.currentFloor) {
-        if (elevator.upStops.peek() !== floor || elevator.upStops.toArray().indexOf(floor) === -1) elevator.upStops.insert(floor);
+  private calculateElevatorScore(
+    elevator: Elevator,
+    request: PassengerRequest
+  ): number {
+    if (!this.isElevatorAvailable(elevator)) {
+      return Infinity;
+    }
+
+    let score = Math.abs(elevator.currentFloor - request.sourceFloor) * 100;
+
+    if (elevator.direction !== ElevatorDirection.IDLE) {
+      const requestDirection =
+        request.destinationFloor > request.sourceFloor
+          ? ElevatorDirection.UP
+          : ElevatorDirection.DOWN;
+
+      if (elevator.direction === requestDirection) {
+        if (
+          (elevator.direction === ElevatorDirection.UP &&
+            elevator.currentFloor <= request.sourceFloor) ||
+          (elevator.direction === ElevatorDirection.DOWN &&
+            elevator.currentFloor >= request.sourceFloor)
+        ) {
+          score *= 0.5;
+        } else {
+          score *= 3;
+        }
       } else {
-        if (elevator.downStops.peek() !== floor || elevator.downStops.toArray().indexOf(floor) === -1) elevator.downStops.insert(floor);
-      }
-    } else if (elevator.direction === ElevatorDirection.DOWN) {
-      if (floor <= elevator.currentFloor) {
-         if (elevator.downStops.peek() !== floor || elevator.downStops.toArray().indexOf(floor) === -1) elevator.downStops.insert(floor);
-      } else {
-         if (elevator.upStops.peek() !== floor || elevator.upStops.toArray().indexOf(floor) === -1) elevator.upStops.insert(floor);
-      }
-    } else {
-      if (floor > elevator.currentFloor) {
-        if (elevator.upStops.peek() !== floor || elevator.upStops.toArray().indexOf(floor) === -1) elevator.upStops.insert(floor);
-      } else if (floor < elevator.currentFloor) {
-        if (elevator.downStops.peek() !== floor || elevator.downStops.toArray().indexOf(floor) === -1) elevator.downStops.insert(floor);
-      } else {
-        if (elevator.upStops.peek() !== floor || elevator.upStops.toArray().indexOf(floor) === -1) elevator.upStops.insert(floor);
+        score *= 4;
       }
     }
+
+    const loadFactor = elevator.passengers.length / elevator.capacity;
+    score *= 1 + loadFactor;
+
+    if (elevator.state === ElevatorState.IDLE) {
+      score *= 0.9;
+    }
+    return score;
   }
 
-  // --- Utility Methods ---
+  private isElevatorAvailable(elevator: Elevator): boolean {
+    return (
+      elevator.state !== ElevatorState.MAINTENANCE &&
+      elevator.state !== ElevatorState.OUT_OF_SERVICE &&
+      elevator.state !== ElevatorState.EMERGENCY_STOP &&
+      elevator.state !== ElevatorState.OVERLOADED
+    ); // Assuming OVERLOADED is a state
+  }
+
   private findElevator(elevatorId: string): Elevator | undefined {
-    return this.systemState.elevators.find(e => e.id === elevatorId);
-  }
-
-  private msToTicks(ms: number): number {
-    const tickDuration = this.systemState.config.simulationTickMs || 100; // Default tick to 100ms
-    return Math.max(1, Math.round(ms / tickDuration)); // Ensure at least 1 tick
+    return this.systemState.elevators.find((e) => e.id === elevatorId);
   }
 
   private updateButtonState(buttonId: string, newState: ButtonState): void {
-    const button = this.systemState.buttons.find(b => b.id === buttonId);
+    const button = this.systemState.buttons.find((b) => b.id === buttonId);
     if (button) {
-        button.state = newState;
+      button.state = newState;
     }
   }
-  private clearCallButtonForFloor(floor: number, direction: ElevatorDirection): void {
-    if (!isMovingDirection(direction)) return; // Only UP/DOWN calls
-    const buttonId = `floor-${floor}-call-${direction.toLowerCase()}`;
-    this.updateButtonState(buttonId, ButtonState.RELEASED);
+
+  public getSystemState(): ElevatorSystem {
+    return this.systemState;
   }
-  private getDirectionFromRequest(request: PassengerRequest): ElevatorDirection {
-      if (request.destinationFloor > request.sourceFloor) return ElevatorDirection.UP;
-      if (request.destinationFloor < request.sourceFloor) return ElevatorDirection.DOWN;
-      return ElevatorDirection.IDLE; // Should not happen for a valid move
+
+  public setSimulationSpeed(factor: number): void {
+    if (factor <= 0) {
+      console.warn("Simulation speed factor must be positive");
+      return;
+    }
+    this.systemState.simulationSpeedFactor = factor;
   }
-  private requestMatchesDirection(request: PassengerRequest, elevatorDirection: "UP" | "DOWN"): boolean {
-      const requestDirection = this.getDirectionFromRequest(request);
-      return requestDirection === elevatorDirection;
+
+  public triggerEmergency(type: GlobalSystemState): void {
+    this.systemState.globalState = type;
+  }
+
+  public resetEmergency(): void {
+    this.systemState.globalState = GlobalSystemState.NORMAL;
+  }
+
+  /**
+   * Marks a request as fulfilled and removes it from the pending queue.
+   * @param elevatorId The ID of the elevator that fulfilled the request.
+   * @param floor The floor where the request was fulfilled.
+   */
+  public markRequestAsFulfilled(elevatorId: string, floor: number): void {
+    const activeRequests = new MinHeap<PassengerRequest>(passengerRequestComparator);
+
+    while (!this.systemState.pendingRequests.isEmpty()) {
+        const request = this.systemState.pendingRequests.extractMin()!;
+        if (
+            request.assignedElevatorId === elevatorId &&
+            request.sourceFloor === floor &&
+            request.status === RequestStatus.IN_TRANSIT
+        ) {
+            console.log(`Request ${request.id} fulfilled by elevator ${elevatorId} at floor ${floor}.`);
+            request.status = RequestStatus.COMPLETED;
+        } else {
+            activeRequests.insert(request);
+        }
+    }
+
+    this.systemState.pendingRequests = activeRequests;
+  }
+
+  /**
+   * Cleanup method to be called when the simulation is stopped.
+   */
+  public cleanup(): void {
+    // Reset all elevators
+    this.systemState.elevators.forEach(elevator => {
+      if ('reset' in elevator) {
+        (elevator as any).reset(this.systemState.config.initialFloor);
+      }
+    });
+    // Clear pending requests
+    this.systemState.pendingRequests = new MinHeap<PassengerRequest>(passengerRequestComparator);
+    // Reset buttons
+    this.systemState.buttons.forEach(button => {
+      button.state = ButtonState.RELEASED;
+    });
+    // Reset time and state
+    this.systemState.currentTime = 0;
+    this.systemState.globalState = GlobalSystemState.NORMAL;
+    this.systemState.simulationSpeedFactor = 1;
   }
 }
