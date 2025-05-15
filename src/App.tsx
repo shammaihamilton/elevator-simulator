@@ -11,7 +11,6 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 
 
-import ElevatorSystem from './components/ElevatorSystem';
 import BuildingContainer from './components/BuildingContainer';
 
 
@@ -25,7 +24,7 @@ function App() {
           <Route index element={<HomePage />} />
           {/* <Route path="/simulation" element={<Building config={defaultElevatorSystemConfig} />} /> */}
           <Route path="/simulation" element={<BuildingContainer />} />
-          <Route path="/configure" element={<ElevatorSystem  />} />
+          {/* <Route path="/configure" element={<HomePage />} /> */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
