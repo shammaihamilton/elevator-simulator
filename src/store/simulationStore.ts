@@ -1,93 +1,64 @@
-import { create } from 'zustand';
-import type { BuildingConfig } from '../types/interfaces';
-import { ElevatorManager } from '../core/ElevatorManager';
-import { GlobalSystemState } from '../types/enums';
+import { create, StateCreator } from 'zustand';
+import { buildingsSettings } from '@/config/buildingSettings';
+import { ElevatorManagerFactory } from '@/services/ElevatorManagerFactory';
+// import { ElevatorRequestFactory } from '@/services/PassengerRequestFactory';
+import type { SimulationState } from '@/types/interfaces';
+import { ElevatorRequestFactory } from '@/services/PassengerRequestFactory';
 
-type BuildingLayout = Array<{
-  numSystems: number;
-  systemConfig: BuildingConfig;
-}>;
+const simulationCreator: StateCreator<SimulationState> = (set, get, _store) => {
+  const initManagers = () => {
+    const numBuildings = buildingsSettings.building.buildings;
+    const elevatorsPerBuilding = buildingsSettings.building.elevatorsPerBuilding;
+    const initialFloor = buildingsSettings.building.initialElevatorFloor;
+    const timing = buildingsSettings.timing;
 
-export interface BuildingState {
-  id: string;
-  systems: ElevatorManager[];
-}
+    // const elevatorLogs: [] as string[]
 
-interface SimulationState {
-  globalConfig: BuildingConfig | null;
-  buildings: BuildingState[];
-  currentTime: number;
-  globalSystemState: GlobalSystemState;
-  simulationSpeedFactor: number;
-  isSimulationRunning: boolean;
+    return Array.from({ length: numBuildings }).map((_, bIdx) => {
+      const elevatorConfigs = Array.from({ length: elevatorsPerBuilding }).map(() => ({
+        initialFloor,
+        timing,
 
-  // Actions
-  initializeSimulation: (config: BuildingConfig, buildingLayout: BuildingLayout) => void;
-  addPassengerRequest: (buildingId: string, systemId: string, sourceFloor: number, destinationFloor: number) => string;
-  tick: () => void;
-  toggleSimulation: () => void;
-  setSimulationSpeed: (speed: number) => void;
-}
+      }));
 
-export const useSimulationStore = create<SimulationState>((set, get) => ({
-  globalConfig: null,
-  buildings: [],
-  currentTime: 0,
-  globalSystemState: GlobalSystemState.NORMAL,
-  simulationSpeedFactor: 1,
-  isSimulationRunning: false,
-
-  initializeSimulation: (config: BuildingConfig, buildingLayout: BuildingLayout) => {
-    const newBuildings: BuildingState[] = buildingLayout.map((bLayout, bIndex) => {
-      const buildingId = `building-${bIndex}`;
-      const systems: ElevatorManager[] = [];
-
-      for (let sIndex = 0; sIndex < bLayout.numSystems; sIndex++) {
-        systems.push(new ElevatorManager(bLayout.systemConfig));
-      }
-
-      return { id: buildingId, systems };
+      return ElevatorManagerFactory.create(`B${bIdx + 1}`, elevatorConfigs);
     });
+  };
 
-    set({
-      globalConfig: config,
-      buildings: newBuildings,
-      currentTime: 0,
-      globalSystemState: GlobalSystemState.NORMAL,
-      isSimulationRunning: false,
-    });
-  },
+  const managers = initManagers();
 
-  addPassengerRequest: (buildingId: string, systemId: string, sourceFloor: number, destinationFloor: number) => {
-    const buildings = get().buildings;
-    const building = buildings.find(b => b.id === buildingId);
-    const system = building?.systems[parseInt(systemId.split('-').pop() || '0')];
-    
-    if (system) {
-      const direction = destinationFloor > sourceFloor ? "UP" : "DOWN";
-      const requestId = system.addPassengerRequestFromFloorCall(sourceFloor, destinationFloor, direction);
-      set(state => ({ buildings: [...state.buildings] }));
-      return requestId;
-    }
-    return '';
-  },
+  return {
+    managers,
+    settings: buildingsSettings,
+    currentTime: buildingsSettings.simulation.currentTime as number,
 
-  tick: () => {
-    if (!get().isSimulationRunning) return;
-    
-    get().buildings.forEach(building => {
-      building.systems.forEach(system => {
-        system.tick();
+    requestElevator: (buildingIndex, sourceFloor, destinationFloor) => {
+      const { managers: currentManagers } = get();
+      const request = ElevatorRequestFactory.create(sourceFloor, destinationFloor);
+      
+      currentManagers[buildingIndex].handleRequest(request);
+      set({ managers: [...currentManagers] });
+    },
+
+    tick: () => {
+      const { managers: currentManagers, settings, currentTime } = get();
+      currentManagers.forEach((manager) => manager.tick(currentTime));
+      set({
+        managers: [...currentManagers], 
+        currentTime: currentTime + settings.simulation.simulationTickMs
       });
-    });
+    },
 
-    set(state => ({
-      currentTime: state.currentTime + 1,
-      buildings: [...state.buildings]
-    }));
-  },
+    reset: () => {
+      const newManagers = initManagers(); 
+      set({ managers: newManagers, currentTime: buildingsSettings.simulation.currentTime });
+    },
+    stop: () => {
+      const { managers } = get();
+      managers.forEach((manager) => manager.stopAll());
+      set({ managers: [...managers] });
+    }
+  };
+};
 
-  toggleSimulation: () => set(state => ({ isSimulationRunning: !state.isSimulationRunning })),
-  
-  setSimulationSpeed: (speed: number) => set({ simulationSpeedFactor: Math.max(0.1, speed) })
-}));
+export const useSimulationStore = create<SimulationState>(simulationCreator);

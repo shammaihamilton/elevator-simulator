@@ -1,121 +1,161 @@
-import React, { useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ElevatorState, ElevatorDoorState } from '../types/enums';
-import type { Elevator as ElevatorType } from '../types/interfaces';
-import './Elevator.css';
-import elvPngPath from '../assets/elv.png'; // Assuming this path is correct
 
+import React, { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import elvImg from "../assets/elv.png";
+import { ElevatorDoor } from "./ElevatorDoor";
+import { ElevatorDoorState } from "../types/enums";
+import { IElevatorFSM } from "@/types/interfaces";
 interface ElevatorProps {
-  elevator: ElevatorType;
-  floorHeight: number;
-  onInternalRequest?: (elevatorId: string, destinationFloor: number) => void;
-  totalFloors?: number; // Optional: for internal floor buttons
-  elevatorPosition?: React.CSSProperties;
-  totalFloorsInBuilding: number; // Add this prop
+  y: number;
+  doorState: ElevatorDoorState;
+  playDing: boolean;
+  animationDuration: number;
+  elevatorFSM: IElevatorFSM;
 }
 
 export const Elevator: React.FC<ElevatorProps> = ({
-  elevator,
-  floorHeight,
-  // onInternalRequest, // Kept commented as per your code
-  totalFloorsInBuilding,
-  elevatorPosition,
+  y,
+  doorState,
+  playDing,
+  animationDuration,
+  elevatorFSM,
 }) => {
-  const {
-    id,
-    currentFloor,
-    state,
-    doorState,
-    passengers = [],
-    capacity,
-  } = elevator;
-  
-  const yPosition = (totalFloorsInBuilding - 1 - currentFloor) * floorHeight;
-  const isMoving = state === ElevatorState.MOVING_UP || state === ElevatorState.MOVING_DOWN;
-  const targetDoorOpenState =
-    doorState === ElevatorDoorState.OPEN || doorState === ElevatorDoorState.OPENING;
-  const isDoorMoving =
-    doorState === ElevatorDoorState.OPENING || doorState === ElevatorDoorState.CLOSING;
-  
+  const audioRef = useRef<HTMLAudioElement | null>();
+  const prevYRef = useRef(y);
+
+  // Calculate door animation duration based on elevator settings
+  const doorAnimationDuration = elevatorFSM.timing.doorOpenTimeMs / 1000;
+
+  // Play ding sound when needed
   useEffect(() => {
-    // This effect runs when 'state', 'currentFloor', or 'id' changes.
-    if (state === ElevatorState.MOVING_UP || state === ElevatorState.MOVING_DOWN) {
-
-
-      // Log the elevator's state and current floor when it starts moving.
-
-      
-      // This will log when the elevator is in a moving state.
-      // Note: 'currentFloor' in this log might reflect the floor it *arrived at*
-      // if the state updates to IDLE just after reaching the currentFloor.
-      // If you want to log the *destination* when it starts moving,
-      // you might need to access that from the elevator object if available.
-      console.log(`Elevator ${id} is moving. Current floor: ${currentFloor}, State: ${state}`);
+    if (playDing && audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current
+        .play()
+        .catch((err) => console.warn("Ding failed to play:", err));
     }
-    if (state === ElevatorState.IDLE) {
-      console.log(`Elevator ${id} is idle at floor ${currentFloor}`);
+  }, [playDing]);
+
+  // Log when y changes to debug positioning
+  useEffect(() => {
+    if (prevYRef.current !== y) {
+      console.log(`Elevator ${elevatorFSM.id} moving to Y: ${y}, Floor: ${elevatorFSM.currentFloor}`);
+      prevYRef.current = y;
     }
-  }, [state, currentFloor, id, doorState]); // Added doorState to dependency array for completeness if you use it
-
-  const loadPercentage = capacity > 0 ? (passengers.length / capacity) * 100 : 0;
-
+  }, [y, elevatorFSM.id, elevatorFSM.currentFloor]);
 
   return (
-    <motion.div
-      className="elevator"
-      initial={false}
-      animate={{
-        y: yPosition,
-      }}
-      transition={{
-        type: 'spring',
-        stiffness: 200,
-        damping: 20,
-        mass: 1,
-      }}
-      style={elevatorPosition}
-    >
-      <div className="elevator-shaft">
-        <div
-          className={`elevator-car ${isMoving ? 'moving' : ''} ${targetDoorOpenState ? 'open' : ''}`}
-          style={{ backgroundImage: `url(${elvPngPath})` }}
-        >
-          <div className="elevator-interior">
-            <div className="elevator-info">
-              <div className="elevator-id">Elevator: {id}</div>
-              <div className="current-floor-display">Floor: {currentFloor}</div>
-              <div className="elevator-status">
-                <span className="direction-indicator">
-                  {state === ElevatorState.MOVING_UP
-                    ? '▲'
-                    : state === ElevatorState.MOVING_DOWN
-                    ? '▼'
-                    : '•'}
-                </span>
-                <span> {state}</span>
-                {isDoorMoving && <span> ({doorState})</span>}
-              </div>
-              <div className={`load-indicator ${
-                loadPercentage < 50 ? 'low' : loadPercentage < 85 ? 'medium' : 'high'
-              }`}>
-                Load: {passengers.length}/{capacity} ({loadPercentage.toFixed(0)}%)
-              </div>
+    <>
+      <motion.div
+        initial={false}
 
-              <div className="elevator-icon">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="elevator-svg-icon"
-                >
-                  <path d="M12 2a2 2 0 00-2 2v1H8a2 2 0 00-2 2v1H4a2 2 0 00-2 2v1h1v10a2 2 0 002 2h16a2 2 0 002-2V8h1V7a2 2 0 00-2-2h-1V4a2 2 0 00-2-2h-1V1a2 2 0 00-4 0v1H8V1a2 2 0 00-4 0v1H4zm6.5-.5A.5.5 0 0113.5.5h-3A.5.5 0 0111 .5h6zM4.5.5A.5.5 0 014 .5h3A.5.5 0 017 .5H4z" />
-                </svg>
-              </div>
-            </div>
-            {/* Internal button panel remains commented out */}
+        // Animate to new position
+        animate={{ y: y === null ? undefined : y }}
+        transition={{ 
+          duration: animationDuration, 
+          ease: "easeInOut",
+          // Make sure the animation completes
+          onComplete: () => {
+            console.log(`Elevator ${elevatorFSM.id} completed animation to Y: ${y}`);
+          }
+        }}
+        style={{
+          margin: "20px",
+          position: "absolute",
+          width: "70px",
+          height: "70px",
+          backgroundColor: "#333",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)",
+          borderRadius: "5px",
+          overflow: "hidden",
+        }}
+      >
+        {/* Elevator cabin */}
+        <div
+          className="elevator-cabin"
+          style={{
+            width: "70px",
+            height: "70px",
+            backgroundColor: "white",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Elevator background image */}
+          <img
+            src={elvImg}
+            alt="Elevator"
+            style={{ 
+              position: "absolute",
+              width: "100%", 
+              height: "100%", 
+              objectFit: "cover",
+            }}
+          />
+
+          {/* Floor display */}
+          <div
+            style={{
+              position: "absolute",
+              top: "5px",
+              fontSize: "18px",
+              fontWeight: "bold",
+              color: "lightgreen",
+              zIndex: 5,
+              borderRadius: "50%",
+              width: "25px",
+              height: "25px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center"
+            }}
+          >
+            {elevatorFSM.currentFloor}
           </div>
+
+          {/* Elevator doors component - doors should be on top */}
+          <ElevatorDoor
+            doorState={doorState}
+            doorAnimationDuration={doorAnimationDuration}
+          />
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+
+      {/* Audio for elevator "ding" */}
+      <audio
+        ref={(el) => (audioRef.current = el)}
+        src="@/assets/ding.mp3"
+        preload="auto"
+        loop={false}
+        style={{ display: "none" }}
+      />
+
+
+      {/* Debug info - helps with positioning troubleshooting */}
+      {/* <div style={{ 
+        position: "absolute", 
+        left: `${offsetX + 85}px`, 
+        top: y, 
+        color: "#333", 
+        fontSize: "10px", 
+        width: "100px",
+        backgroundColor: "rgba(255,255,255,0.7)",
+        padding: "2px",
+        borderRadius: "3px"
+      }}>
+        ID: {elevatorFSM.id}<br/>
+        Floor: {elevatorFSM.currentFloor}<br/>
+        Y: {Math.round(y)}<br/>
+        Door: {doorState}
+      </div> */}
+    </>
   );
 };
+
+export default Elevator;

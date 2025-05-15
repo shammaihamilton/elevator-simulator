@@ -3,10 +3,16 @@ import './assets/help.css';
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
-import Building from './components/Building';
-import ConfigurationPage from './pages/ConfigurationPage';
+
+// import Building from './components/old-components/Building';
+// import {  } from './config';
+
+// import ConfigurationPage from './pages/ConfigurationPage';
 import HomePage from './pages/HomePage';
-import { defaultElevatorSystemConfig } from './config';
+
+
+import ElevatorSystem from './components/ElevatorSystem';
+import BuildingContainer from './components/BuildingContainer';
 
 
 
@@ -17,8 +23,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
-          <Route path="/simulation" element={<Building config={defaultElevatorSystemConfig} />} />
-          <Route path="/configure" element={<ConfigurationPage />} />
+          {/* <Route path="/simulation" element={<Building config={defaultElevatorSystemConfig} />} /> */}
+          <Route path="/simulation" element={<BuildingContainer />} />
+          <Route path="/configure" element={<ElevatorSystem  />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
