@@ -3,8 +3,8 @@ import { AppSettings } from '../types/interfaces';
 export const buildingsSettings: AppSettings = {
   building: {
     buildings: 1,
-    floorsPerBuilding: 6,
-    elevatorsPerBuilding: 2,
+    floorsPerBuilding: 7,
+    elevatorsPerBuilding: 3,
     initialElevatorFloor: 0,
   },
   timing: {

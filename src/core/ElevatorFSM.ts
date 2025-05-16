@@ -1,7 +1,9 @@
 import { ElevatorStateObject, ElevatorTimingSettings, PassengerRequest } from '../types/interfaces';
-import { ElevatorState, ElevatorDoorState } from '../types/enums';
+import { ElevatorState, ElevatorDoorState, RequestStatus } from '../types/enums';
 import { Queue } from '../data-structures/Queue';
 import { ElevatorTimingManager } from './ElevatorTimingManager';
+import { generateId } from '../utils/idGenerator'; // For internal requests
+import { RequestTimingData } from './RequestTimingData'; // For internal requests
 
 export class ElevatorFSM implements ElevatorFSM {
   id: string;
@@ -12,9 +14,11 @@ export class ElevatorFSM implements ElevatorFSM {
   timing: ElevatorTimingSettings;
   timingManager: ElevatorTimingManager;
 
+  public readonly designatedBaseFloor: number; // Store the base floor
   constructor(id: string, initialFloor: number, timing: ElevatorTimingSettings) {
     this.id = id;
     this.currentFloor = initialFloor;
+    this.designatedBaseFloor = initialFloor;
     this.timing = timing;
     this.queue = new Queue<PassengerRequest>();
     this.timingManager = new ElevatorTimingManager();
@@ -28,12 +32,26 @@ export class ElevatorFSM implements ElevatorFSM {
     if (this.queue.isEmpty()) {
       if (this.state !== ElevatorState.IDLE) {
         this.state = ElevatorState.IDLE;
+        this.doorState = ElevatorDoorState.CLOSED;
         this.timingManager.reset();
       }
-      return;
+      if (this.currentFloor !== this.designatedBaseFloor) {
+        const returnToBaseRequest: PassengerRequest = {
+          id: generateId(`internal-return-${this.id}-${currentTime}`),
+          sourceFloor: this.currentFloor,
+          destinationFloor: this.designatedBaseFloor,
+          pickedUp: false, 
+          status: RequestStatus.IN_TRANSIT, 
+          requestedAt: new RequestTimingData(currentTime), 
+        };
+        this.addStop(returnToBaseRequest);
+      } else {
+        return;
+      }
     }
 
-    const currentRequest = this.queue.peek()!;
+    const currentRequest = this.queue.peek();
+    if (!currentRequest) { return; }
     const targetFloor = currentRequest.pickedUp ? currentRequest.destinationFloor : currentRequest.sourceFloor;
 
     switch (this.state) {
@@ -53,8 +71,10 @@ export class ElevatorFSM implements ElevatorFSM {
           if (!currentRequest.pickedUp) {
             currentRequest.pickedUp = true;
             currentRequest.requestedAt.markPickedUp(currentTime);
+            currentRequest.status = RequestStatus.IN_TRANSIT;
           } else {
             currentRequest.requestedAt.markDroppedOff(currentTime);
+            currentRequest.status = RequestStatus.COMPLETED
           }
         }
         break;
@@ -71,8 +91,11 @@ export class ElevatorFSM implements ElevatorFSM {
           if (!currentRequest.pickedUp) {
             currentRequest.pickedUp = true;
             currentRequest.requestedAt.markPickedUp(currentTime);
+            currentRequest.status = RequestStatus.IN_TRANSIT;
+
           } else {
             currentRequest.requestedAt.markDroppedOff(currentTime);
+            currentRequest.status = RequestStatus.COMPLETED
           }
         }
         break;
@@ -107,7 +130,8 @@ export class ElevatorFSM implements ElevatorFSM {
           }
 
           this.state = ElevatorState.IDLE;
-          this.timingManager.reset();
+          this.doorState = ElevatorDoorState.CLOSED;
+          this.timingManager.reset(); 
         }
         break;
     }
@@ -152,7 +176,7 @@ export class ElevatorFSM implements ElevatorFSM {
   }
 
   stop(): void {
-    this.state = ElevatorState.IDLE;
+    this.doorState = ElevatorDoorState.CLOSED;
     this.timingManager.reset();
   }
 

@@ -1,10 +1,11 @@
-
 import React, { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import elvImg from "../assets/elv.png";
 import { ElevatorDoor } from "./ElevatorDoor";
 import { ElevatorDoorState } from "../types/enums";
 import { IElevatorFSM } from "@/types/interfaces";
+import dingSound from "../assets/ding.mp3";
+
 interface ElevatorProps {
   y: number;
   doorState: ElevatorDoorState;
@@ -39,7 +40,9 @@ export const Elevator: React.FC<ElevatorProps> = ({
   // Log when y changes to debug positioning
   useEffect(() => {
     if (prevYRef.current !== y) {
-      console.log(`Elevator ${elevatorFSM.id} moving to Y: ${y}, Floor: ${elevatorFSM.currentFloor}`);
+      console.log(
+        `Elevator ${elevatorFSM.id} moving to Y: ${y}, Floor: ${elevatorFSM.currentFloor}`
+      );
       prevYRef.current = y;
     }
   }, [y, elevatorFSM.id, elevatorFSM.currentFloor]);
@@ -48,37 +51,43 @@ export const Elevator: React.FC<ElevatorProps> = ({
     <>
       <motion.div
         initial={false}
-
         // Animate to new position
-        animate={{ y: y === null ? undefined : y }}
-        transition={{ 
-          duration: animationDuration, 
-          ease: "easeInOut",
+        animate={{ y: y }}
+        transition={{
+          duration: animationDuration,
+          ease: "linear",
           // Make sure the animation completes
           onComplete: () => {
-            console.log(`Elevator ${elevatorFSM.id} completed animation to Y: ${y}`);
-          }
+            console.log(
+              `Elevator ${elevatorFSM.id} completed animation to Y: ${y}`
+            );
+          },
         }}
         style={{
           margin: "20px",
           position: "absolute",
+          left: "0px",
           width: "70px",
           height: "70px",
           backgroundColor: "#333",
           display: "flex",
-          justifyContent: "center",
+          justifyContent: "space-between",
+          border: "2px solid #555",
           alignItems: "center",
           boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)",
           borderRadius: "5px",
           overflow: "hidden",
+          flexDirection: "column",
+
+          zIndex: 10,
         }}
       >
         {/* Elevator cabin */}
         <div
           className="elevator-cabin"
           style={{
-            width: "70px",
-            height: "70px",
+            width: "80px",
+            height: "80px",
             backgroundColor: "white",
             display: "flex",
             justifyContent: "center",
@@ -91,10 +100,10 @@ export const Elevator: React.FC<ElevatorProps> = ({
           <img
             src={elvImg}
             alt="Elevator"
-            style={{ 
+            style={{
               position: "absolute",
-              width: "100%", 
-              height: "100%", 
+              width: "100%",
+              height: "100%",
               objectFit: "cover",
             }}
           />
@@ -113,47 +122,25 @@ export const Elevator: React.FC<ElevatorProps> = ({
               height: "25px",
               display: "flex",
               justifyContent: "center",
-              alignItems: "center"
+              alignItems: "center",
             }}
           >
             {elevatorFSM.currentFloor}
           </div>
-
-          {/* Elevator doors component - doors should be on top */}
-          <ElevatorDoor
-            doorState={doorState}
-            doorAnimationDuration={doorAnimationDuration}
-          />
         </div>
-      </motion.div>
+        <ElevatorDoor
+          doorState={doorState}
+          doorAnimationDuration={doorAnimationDuration}
+        />
 
-      {/* Audio for elevator "ding" */}
+      </motion.div>
       <audio
         ref={(el) => (audioRef.current = el)}
-        src="@/assets/ding.mp3"
+        src={dingSound}
         preload="auto"
         loop={false}
         style={{ display: "none" }}
       />
-
-
-      {/* Debug info - helps with positioning troubleshooting */}
-      {/* <div style={{ 
-        position: "absolute", 
-        left: `${offsetX + 85}px`, 
-        top: y, 
-        color: "#333", 
-        fontSize: "10px", 
-        width: "100px",
-        backgroundColor: "rgba(255,255,255,0.7)",
-        padding: "2px",
-        borderRadius: "3px"
-      }}>
-        ID: {elevatorFSM.id}<br/>
-        Floor: {elevatorFSM.currentFloor}<br/>
-        Y: {Math.round(y)}<br/>
-        Door: {doorState}
-      </div> */}
     </>
   );
 };

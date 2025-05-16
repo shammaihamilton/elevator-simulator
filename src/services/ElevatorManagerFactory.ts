@@ -1,7 +1,6 @@
 import { ElevatorManager } from '../core/ElevatorManager';
 import { ElevatorFactory } from './ElevatorFactory';
 import { ElevatorTimingSettings } from '../types/interfaces';
-// import { IElevatorFSM } from '../types/interfaces';
 
 export class ElevatorManagerFactory {
   static create(
@@ -14,8 +13,7 @@ export class ElevatorManagerFactory {
     const elevators = elevatorConfigs.map((config, i) =>
       ElevatorFactory.create({
         id: `${idPrefix}-E${i + 1}`,
-        ...config,
-
+        ...config
       })
     );
     return new ElevatorManager(elevators);

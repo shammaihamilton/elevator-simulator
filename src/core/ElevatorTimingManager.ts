@@ -79,13 +79,8 @@ export class ElevatorTimingManager implements IElevatorTimingManager {
   private doorOpenEndTime: number | null = null;
   private passengerActivityEndTime: number | null = null;
   private actionFinishTime: number | null = null;
-  private elevatorId: string = "DefaultElevator"; // Optional: pass ID for better logging
 
-  constructor(elevatorId?: string) {
-    if (elevatorId) {
-      this.elevatorId = elevatorId;
-    }
-  }
+  
 
   setDoorOpenEndTime(time: number): void {
     this.doorOpenEndTime = time;

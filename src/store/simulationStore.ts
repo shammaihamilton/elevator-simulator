@@ -1,7 +1,6 @@
 import { create, StateCreator } from 'zustand';
 import { buildingsSettings } from '@/config/buildingSettings';
 import { ElevatorManagerFactory } from '@/services/ElevatorManagerFactory';
-// import { ElevatorRequestFactory } from '@/services/PassengerRequestFactory';
 import type { SimulationState } from '@/types/interfaces';
 import { ElevatorRequestFactory } from '@/services/PassengerRequestFactory';
 
@@ -12,13 +11,11 @@ const simulationCreator: StateCreator<SimulationState> = (set, get, _store) => {
     const initialFloor = buildingsSettings.building.initialElevatorFloor;
     const timing = buildingsSettings.timing;
 
-    // const elevatorLogs: [] as string[]
 
     return Array.from({ length: numBuildings }).map((_, bIdx) => {
       const elevatorConfigs = Array.from({ length: elevatorsPerBuilding }).map(() => ({
         initialFloor,
         timing,
-
       }));
 
       return ElevatorManagerFactory.create(`B${bIdx + 1}`, elevatorConfigs);
@@ -40,15 +37,17 @@ const simulationCreator: StateCreator<SimulationState> = (set, get, _store) => {
       set({ managers: [...currentManagers] });
     },
 
-    tick: () => {
+     tick: () => {
       const { managers: currentManagers, settings, currentTime } = get();
+      const newCurrentTime = currentTime + settings.simulation.simulationTickMs;
+
+      // 1. Let all elevators process their current state and tasks for the current time
       currentManagers.forEach((manager) => manager.tick(currentTime));
       set({
         managers: [...currentManagers], 
-        currentTime: currentTime + settings.simulation.simulationTickMs
+        currentTime: newCurrentTime
       });
     },
-
     reset: () => {
       const newManagers = initManagers(); 
       set({ managers: newManagers, currentTime: buildingsSettings.simulation.currentTime });

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {  useRef } from "react";
 import { useSimulationStore } from "../store/simulationStore";
 import Floor from "@/components/Floor";
 import ElevatorVisual from "@/components/ElevatorVisual";
@@ -8,22 +8,13 @@ const Building: React.FC<{ buildingIndex: number }> = ({ buildingIndex }) => {
   const floorRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const { managers, requestElevator } = useSimulationStore();
   const manager = managers[buildingIndex];
-  const [rerenderTrigger, setRerenderTrigger] = useState(0);
   const totalFloors = buildingsSettings.building.floorsPerBuilding;
 
   if (!manager || !manager.elevators) {
     return <div>Loading building data...</div>;
   }
 
-  // useEffect(() => {
-  //   const handleResize = () => {
-  //     setRerenderTrigger(rerenderTrigger + 1);
-  //   };
-  //   window.addEventListener("resize", handleResize);
-  //   return () => {
-  //     window.removeEventListener("resize", handleResize);
-  //   };
-  // }, [rerenderTrigger]);
+
 
   if (!manager || !manager.elevators) {
     return <div>Loading building data...</div>;
