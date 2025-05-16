@@ -24,10 +24,10 @@ export const Elevator: React.FC<ElevatorProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>();
   const prevYRef = useRef(y);
 
-  // Calculate door animation duration based on elevator settings
-  const doorAnimationDuration = elevatorFSM.timing.doorOpenTimeMs / 1000;
+  const doorAnimationDuration = elevatorFSM.timing.doorOpenTimeMs / 1000; // Convert to seconds
 
-  // Play ding sound when needed
+
+  // Effect to play the ding sound
   useEffect(() => {
     if (playDing && audioRef.current) {
       audioRef.current.currentTime = 0;
@@ -37,7 +37,7 @@ export const Elevator: React.FC<ElevatorProps> = ({
     }
   }, [playDing]);
 
-  // Log when y changes to debug positioning
+// Effect to handle the elevator's Y position
   useEffect(() => {
     if (prevYRef.current !== y) {
       console.log(
@@ -51,12 +51,10 @@ export const Elevator: React.FC<ElevatorProps> = ({
     <>
       <motion.div
         initial={false}
-        // Animate to new position
         animate={{ y: y }}
         transition={{
           duration: animationDuration,
           ease: "linear",
-          // Make sure the animation completes
           onComplete: () => {
             console.log(
               `Elevator ${elevatorFSM.id} completed animation to Y: ${y}`
@@ -82,7 +80,6 @@ export const Elevator: React.FC<ElevatorProps> = ({
           zIndex: 10,
         }}
       >
-        {/* Elevator cabin */}
         <div
           className="elevator-cabin"
           style={{
@@ -96,7 +93,6 @@ export const Elevator: React.FC<ElevatorProps> = ({
             overflow: "hidden",
           }}
         >
-          {/* Elevator background image */}
           <img
             src={elvImg}
             alt="Elevator"
@@ -108,7 +104,6 @@ export const Elevator: React.FC<ElevatorProps> = ({
             }}
           />
 
-          {/* Floor display */}
           <div
             style={{
               position: "absolute",

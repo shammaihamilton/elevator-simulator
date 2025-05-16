@@ -25,13 +25,12 @@ export const ElevatorDoor: React.FC<ElevatorDoorProps> = ({
         display: 'flex',
         justifyContent: 'space-between',
         pointerEvents: 'none',
-        zIndex: 10 // Ensure doors are above cabin contents
+        zIndex: 10 
       }}
     >
-      {/* Left Door */}
       <motion.div
         animate={{ width: isOpen ? '0%' : '50%' }}
-        transition={{ duration: doorAnimationDuration / 5 }}
+        transition={{ duration: doorAnimationDuration / 10 }}
         style={{ 
           height: '100%', 
           backgroundColor: '#777',
@@ -39,10 +38,9 @@ export const ElevatorDoor: React.FC<ElevatorDoorProps> = ({
         }}
       />
       
-      {/* Right Door */}
       <motion.div
         animate={{ width: isOpen ? '0%' : '50%' }}
-        transition={{ duration: doorAnimationDuration / 5 }}
+        transition={{ duration: doorAnimationDuration / 10 }}
         style={{ 
           height: '100%', 
           backgroundColor: '#777',

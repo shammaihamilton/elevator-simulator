@@ -16,6 +16,7 @@ export interface SimulationState {
   tick: () => void;
   reset: () => void;
   stop: () => void;
+  updateSettings: (newSettings: Partial<AppSettings>) => void;
 }
 
 export interface PassengerRequest {

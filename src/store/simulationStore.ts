@@ -1,7 +1,7 @@
 import { create, StateCreator } from 'zustand';
 import { buildingsSettings } from '@/config/buildingSettings';
 import { ElevatorManagerFactory } from '@/services/ElevatorManagerFactory';
-import type { SimulationState } from '@/types/interfaces';
+import type { AppSettings, SimulationState } from '@/types/interfaces';
 import { ElevatorRequestFactory } from '@/services/PassengerRequestFactory';
 
 const simulationCreator: StateCreator<SimulationState> = (set, get, _store) => {
@@ -56,7 +56,18 @@ const simulationCreator: StateCreator<SimulationState> = (set, get, _store) => {
       const { managers } = get();
       managers.forEach((manager) => manager.stopAll());
       set({ managers: [...managers] });
-    }
+    },
+    updateSettings: (newSettings: Partial<AppSettings>) => {
+      set((state) => ({
+        settings: {
+          ...state.settings,
+          ...newSettings,
+          timing: { ...state.settings.timing, ...newSettings.timing },
+          simulation: { ...state.settings.simulation, ...newSettings.simulation },
+          building: { ...state.settings.building, ...newSettings.building },
+        }
+      }));
+    },
   };
 };
 

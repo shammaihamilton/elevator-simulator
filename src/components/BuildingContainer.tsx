@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import { buildingsSettings } from "@/config/buildingSettings";
 import Building from "@/components/Building";
 import { useSimulationStore } from "@/store/simulationStore";
+import { SimulationControls } from '@components/SimulationControls';
+
 
 const BuildingContainer: React.FC = () => {
   const tick = useSimulationStore((state) => state.tick);
@@ -71,6 +73,9 @@ const BuildingContainer: React.FC = () => {
                 width: "100%",
                 height: "100%",
                 position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                padding: "100px",
               }}
             >
               <Building key={idx} buildingIndex={idx} />

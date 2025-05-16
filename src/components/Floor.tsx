@@ -1,6 +1,6 @@
 import { useSimulationStore } from "@/store/simulationStore";
 import React, { useEffect, useState } from "react";
-
+import { ElevatorDoorState } from "@/types/enums";
 interface FloorProps {
   floorNumber: number;
   onRequest: (destination: number) => void;
@@ -16,27 +16,23 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
 
     useEffect(() => {
       const checkIfServed = () => {
-        // Check all buildings and their elevators
         for (const manager of managers) {
           if (!manager || !manager.elevators) continue;
           
           for (const elevator of manager.elevators) {
-            // If an elevator is at this floor with doors open, mark as served
             if (
               elevator.currentFloor === floorNumber && 
-              elevator.doorState === "OPEN"
+              elevator.doorState === ElevatorDoorState.OPEN
             ) {
               setIsRequested(true);
               
-              // Reset the button after the elevator doors close
               const resetTimeout = setTimeout(() => {
                 setIsRequested(false);
-              }, 1000); // Give enough time for doors to close
+              }, 1000); 
               
               return () => clearTimeout(resetTimeout);
             }
             
-            // Check if this floor is in the elevator's queue
             const isFloorInQueue = elevator.queue.containsFloor(floorNumber);
             if (isFloorInQueue) {
               setIsRequested(true);
@@ -44,15 +40,10 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
             }
           }
         }
-        
-        // If no elevators are serving this floor, reset requested state
         setIsRequested(false);
       };
-      
-      // Check initially and whenever managers or their state changes
       checkIfServed();
-      
-      // Set up interval to periodically check (every 500ms)
+    
       const intervalId = setInterval(checkIfServed, 500);
       return () => clearInterval(intervalId);
     }, [floorNumber, managers, isRequested]);
@@ -92,7 +83,6 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
                 padding: "10px 20px", 
                 transition: "background-color 0.3s, color 0.3s",
             }}
-        //   style={{ padding: "5px 10px" }}
         >
           <div>{floorNumber}</div>
         </button>
