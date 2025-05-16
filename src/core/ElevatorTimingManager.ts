@@ -1,78 +1,4 @@
-// // src/core/ElevatorTimingManager.ts
-// import type { IElevatorTimingManager } from '../types/interfaces';
 
-
-// export class ElevatorTimingManager implements IElevatorTimingManager {
-//   private doorOpenEndTime: number | null = null;
-//   private passengerActivityEndTime: number | null = null;
-//   private currentActionFinishTime: number | null = null;
-
-//   setDoorOpenEndTime(time: number): void {
-//     this.doorOpenEndTime = time;
-//   }
-
-//   extendDoorOpenTime(currentTime: number, minimumExtension: number): void {
-//     const newEndTime = currentTime + minimumExtension;
-//     if (this.doorOpenEndTime === null || newEndTime > this.doorOpenEndTime) {
-//       this.doorOpenEndTime = newEndTime;
-//     }
-//   }
-
-//   setPassengerActivityEndTime(time: number | null): void { // Changed signature
-//     this.passengerActivityEndTime = time;
-//   }
-
-//   extendPassengerActivityTime(currentTime: number, durationMs: number): void {
-//     const base = this.passengerActivityEndTime ?? currentTime;
-//     this.passengerActivityEndTime = base + durationMs;
-//   }
-
-//   setActionFinishTime(time: number | null): void { // Changed signature
-//     this.currentActionFinishTime = time;
-//   }
-
-//   isDoorOpenTimeElapsed(currentTime: number): boolean {
-//     return this.doorOpenEndTime !== null && currentTime >= this.doorOpenEndTime;
-//   }
-
-//   isPassengerActivityComplete(currentTime: number): boolean {
-//     // If no activity is set, it's complete. Otherwise, check time.
-//     return this.passengerActivityEndTime === null || currentTime >= this.passengerActivityEndTime;
-//   }
-
-//   isActionComplete(currentTime: number): boolean {
-//     // If no action finish time is set, it's considered complete (or no action is pending). Otherwise, check time.
-//     return this.currentActionFinishTime === null || currentTime >= this.currentActionFinishTime;
-//   }
-
-//   getDoorOpenEndTime(): number | null {
-//     return this.doorOpenEndTime;
-//   }
-
-//   getPassengerActivityEndTime(): number | null {
-//     return this.passengerActivityEndTime;
-//   }
-
-//   getActionFinishTime(): number | null {
-//     return this.currentActionFinishTime;
-//   }
-
-//   getNextCriticalTime(): number | null {
-//     const times = [this.doorOpenEndTime, this.passengerActivityEndTime, this.currentActionFinishTime]
-//       .filter((t): t is number => t !== null); // Filter out nulls correctly
-//     return times.length ? Math.min(...times) : null;
-//   }
-
-//   reset(): void {
-//     this.doorOpenEndTime = null;
-//     this.passengerActivityEndTime = null;
-//     this.currentActionFinishTime = null;
-//   }
-
-//   clearDoorOpenTimer(): void {
-//     this.doorOpenEndTime = null;
-//   }
-// }
 import { IElevatorTimingManager } from '../types/interfaces';
 
 export class ElevatorTimingManager implements IElevatorTimingManager {
@@ -80,6 +6,7 @@ export class ElevatorTimingManager implements IElevatorTimingManager {
   private passengerActivityEndTime: number | null = null;
   private actionFinishTime: number | null = null;
 
+  private pausedAt: number | null = null;
   
 
   setDoorOpenEndTime(time: number): void {
@@ -122,14 +49,14 @@ export class ElevatorTimingManager implements IElevatorTimingManager {
     return this.passengerActivityEndTime === null || currentTime >= this.passengerActivityEndTime;
   }
 
-  isActionComplete(currentTime: number): boolean {
-    const isActionComplete = this.actionFinishTime === null || currentTime >= this.actionFinishTime;
-    // if (!isActionComplete) {
-    //   console.log(`[${this.elevatorId}] Action not complete yet. Current time: ${currentTime}, finish time: ${this.actionFinishTime}`);
+   isActionComplete(currentTime: number): boolean {
+    if (this.pausedAt !== null) return false; // If paused, current action is not completing
+    const isComplete = this.actionFinishTime === null || currentTime >= this.actionFinishTime;
+    // if (!isComplete && this._pausedAt === null) {
+    //   console.log(`[${this.elevatorId}-TM] Action not complete. Current: ${currentTime}, Finish: ${this._actionFinishTime}`);
     // }
-    return isActionComplete
+    return isComplete;
   }
-
   getDoorOpenEndTime(): number | null {
     return this.doorOpenEndTime;
   }
@@ -143,6 +70,9 @@ export class ElevatorTimingManager implements IElevatorTimingManager {
   }
 
   getNextCriticalTime(): number | null {
+
+     if (this.pausedAt !== null) return null;
+
     const times = [this.doorOpenEndTime, this.passengerActivityEndTime, this.actionFinishTime]
       .filter((time): time is number => time !== null);
     
@@ -153,9 +83,41 @@ export class ElevatorTimingManager implements IElevatorTimingManager {
     this.doorOpenEndTime = null;
     this.passengerActivityEndTime = null;
     this.actionFinishTime = null;
+    this.pausedAt = null
   }
 
   clearDoorOpenTimer(): void {
     this.doorOpenEndTime = null;
+  }
+
+  pause(currentTime: number): void {
+    if (this.pausedAt === null) { // Only pause if not already paused
+      this.pausedAt = currentTime;
+      // console.log(`[${this.elevatorId}-TM] Paused at: ${currentTime}`);
+    }
+  }
+
+  resume(currentTime: number): void {
+    if (this.pausedAt !== null) {
+      const elapsedPausedTime = currentTime - this.pausedAt;
+      // console.log(`[${this.elevatorId}-TM] Resuming. Paused for: ${elapsedPausedTime}ms`);
+
+      if (elapsedPausedTime > 0) { // Only adjust if time actually passed
+        if (this.doorOpenEndTime !== null) {
+          this.doorOpenEndTime += elapsedPausedTime;
+        }
+        if (this.passengerActivityEndTime !== null) {
+          this.passengerActivityEndTime += elapsedPausedTime;
+        }
+        if (this.actionFinishTime !== null) {
+          this.actionFinishTime += elapsedPausedTime;
+        }
+      }
+      this.pausedAt = null; // Clear pause state
+    }
+  }
+
+  isPaused(): boolean {
+    return this.pausedAt !== null;
   }
 }

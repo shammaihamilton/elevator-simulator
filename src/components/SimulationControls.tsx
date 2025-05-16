@@ -72,10 +72,22 @@ export const SimulationControls: React.FC = () => {
     alert('Settings updated!');
   };
 
+  const formatTime = (milliseconds: number): string => {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600)
+    .toString()
+    .padStart(2, '0');
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+    .toString()
+    .padStart(2, '0');
+  const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+};
+
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', maxWidth: '400px', margin: '20px auto', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
       <h2>Simulation Controls</h2>
-      <p><strong>Current Simulation Time:</strong> {currentTime.toFixed(0)} ms</p>
+      <p><strong>Current Simulation Time:</strong>  {formatTime(currentTime)}</p>
 
       <form onSubmit={handleSubmit}>
         <fieldset style={fieldsetStyle}>
@@ -97,7 +109,7 @@ export const SimulationControls: React.FC = () => {
               type="number"
               id="timePerFloorMs"
               name="timePerFloorMs"
-              value={localTimingSettings.timePerFloorMs}
+              value={localTimingSettings.floorTravelTimeMs}
               onChange={handleTimingChange}
               style={inputStyle}
             />

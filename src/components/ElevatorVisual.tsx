@@ -1,11 +1,12 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { IElevatorFSM } from "@/types/interfaces";
 import { Elevator as ElevatorComponent } from "./Elevator";
 import { ElevatorDoorState } from "../types/enums";
 import { getDomBasedYForFloor } from "../utils/floorHelpers";
 
-const FLOOR_VISUAL_HEIGHT = 110; // Matches floorHieght in Floor.tsx
-const ELEVATOR_CABIN_HEIGHT = 70; // Matches height in Elevator.tsx
+const FLOOR_VISUAL_HEIGHT = 110; 
+const ELEVATOR_CABIN_HEIGHT = 70; 
 
 interface ElevatorVisualProps {
   elevatorFSM: IElevatorFSM;
@@ -23,11 +24,10 @@ const ElevatorVisual: React.FC<ElevatorVisualProps> = ({
   const [playDing, setPlayDing] = useState(false);
   const prevFloorRef = useRef(elevatorFSM.currentFloor);
 
-  const travelDuration = elevatorFSM.timing.floorTravelTimeMs / 1000; // Convert to seconds
+  const travelDuration = elevatorFSM.timing.floorTravelTimeMs / 1000; 
 
 
   useEffect(() => {
-
     const allFloorRefsAvailable = Object.values(floorRefs).every(
       (ref) => ref !== null
     );
@@ -44,7 +44,7 @@ const ElevatorVisual: React.FC<ElevatorVisualProps> = ({
     if (topOfFloorY !== null) {
       const verticalCenteringOffset =
         (FLOOR_VISUAL_HEIGHT - ELEVATOR_CABIN_HEIGHT) / 2;
-      const newY = topOfFloorY - verticalCenteringOffset;
+      const newY = topOfFloorY + verticalCenteringOffset;
       if (y !== newY) {
         setY(newY);
       }
@@ -53,13 +53,14 @@ const ElevatorVisual: React.FC<ElevatorVisualProps> = ({
         `[${elevatorFSM.id}] Y-Update-Effect: Failed to calculate Y for FSM floor ${elevatorFSM.currentFloor}. getDomBasedYForFloor returned null. Visual Y remains ${y}.`
       );
     }
-  }, [elevatorFSM.currentFloor, floorRefs, elevatorFSM.id]); 
+  }, [elevatorFSM.currentFloor, floorRefs, elevatorFSM.id]);
 
+  // Sync local doorState with FSM's doorState
   useEffect(() => {
     if (doorState !== elevatorFSM.doorState) {
       setDoorState(elevatorFSM.doorState);
     }
-  }, [elevatorFSM.doorState, doorState]);
+  }, [elevatorFSM.doorState, doorState]); 
 
   useEffect(() => {
     if (
@@ -72,13 +73,13 @@ const ElevatorVisual: React.FC<ElevatorVisualProps> = ({
       return () => clearTimeout(timer);
     }
 
-    if (
-      playDing &&
-      (elevatorFSM.doorState !== ElevatorDoorState.OPEN ||
-        prevFloorRef.current === elevatorFSM.currentFloor)
-    ) {
-      setPlayDing(false);
+    // If doors are not OPEN, or floor hasn't changed in a way that triggers a ding,
+    // ensure playDing is false if it was true from a previous render.
+    if (playDing && (elevatorFSM.doorState !== ElevatorDoorState.OPEN || prevFloorRef.current === elevatorFSM.currentFloor)) {
+        // console.log(`[${elevatorFSM.id}] Conditions not met for ding, ensuring playDing is false.`);
+        setPlayDing(false);
     }
+
 
     if (prevFloorRef.current !== elevatorFSM.currentFloor) {
       prevFloorRef.current = elevatorFSM.currentFloor;
@@ -86,21 +87,19 @@ const ElevatorVisual: React.FC<ElevatorVisualProps> = ({
   }, [
     elevatorFSM.currentFloor,
     elevatorFSM.doorState,
-    playDing,
+    playDing, 
     elevatorFSM.id,
-  ]); 
+  ]);
 
   if (y === null) {
-    console.log(
-      `[${elevatorFSM.id}] Visual Y is null, not rendering ElevatorComponent yet.`
-    );
+
     return null; 
   }
 
   return (
     <ElevatorComponent
       y={y}
-      doorState={doorState}
+      doorState={doorState} 
       playDing={playDing}
       animationDuration={travelDuration}
       elevatorFSM={elevatorFSM}

@@ -3,12 +3,10 @@
 import { IElevatorFSM, ElevatorStateObject, PassengerRequest, IElevatorManager } from '../types/interfaces';
 
 
-
-
-
 export class ElevatorManager implements IElevatorManager {
   id: string;
   elevators: IElevatorFSM[];
+  isPaused: boolean = false; // Added
 
   constructor(elevators: IElevatorFSM[]) {
     this.id = elevators[0].id.split('-')[0]; // Assuming all elevators have the same prefix
@@ -38,21 +36,22 @@ export class ElevatorManager implements IElevatorManager {
   getElevatorById(id: string): IElevatorFSM | undefined {
     return this.elevators.find((elevator) => elevator.id === id);
   }
-  getElevatorByIndex(index: number): IElevatorFSM | undefined {
-    return this.elevators[index];
-  }
 
   getElevatorStatesByBuilding(buildingId: string): IElevatorFSM[] {
     return this.elevators.filter((elevator) => elevator.id.startsWith(buildingId));
   }
-  stop(id: string): void {
+
+  pause(id: string): void {
     const elevator = this.getElevatorById(id);
     if (elevator) {
-      elevator.stop();
+      elevator.pauseFSM(Date.now());
     }
   }
-  stopAll(): void {
-    this.elevators.forEach((elevator) => elevator.stop());
+  resume(id: string): void {
+    const elevator = this.getElevatorById(id);
+    if (elevator) {
+      elevator.resumeFSM(Date.now());
+    }
   }
 
 }

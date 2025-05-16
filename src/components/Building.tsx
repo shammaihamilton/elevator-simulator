@@ -1,4 +1,5 @@
-import React, {  useRef } from "react";
+
+import React, { useRef } from "react";
 import { useSimulationStore } from "../store/simulationStore";
 import Floor from "@/components/Floor";
 import ElevatorVisual from "@/components/ElevatorVisual";
@@ -10,10 +11,8 @@ const Building: React.FC<{ buildingIndex: number }> = ({ buildingIndex }) => {
   const manager = managers[buildingIndex];
   const totalFloors = buildingsSettings.building.floorsPerBuilding;
 
-  if (!manager || !manager.elevators) {
-    return <div>Loading building data...</div>;
-  }
-
+  const floorColumnWidth = "250px";
+  const elevatorSlotWidth = 100;
 
 
   if (!manager || !manager.elevators) {
@@ -21,39 +20,57 @@ const Building: React.FC<{ buildingIndex: number }> = ({ buildingIndex }) => {
   }
 
   return (
-    <div className="" style={{ position: "relative", margin: 50 }}>
+        <div className="" style={{ margin: 50, padding: "20px", border: "1px solid #eee" }}> 
       <h2>Building {buildingIndex + 1}</h2>
-      {/* Floors (top-down) */}
-      {Array.from({
-        length: totalFloors,
-      }).map((_, i) => {
-        const floor = totalFloors  - 1 - i;
-        return (
-          <Floor
-            key={floor}
-            floorNumber={floor} 
-            onRequest={(destinationFloorFromButton) => { 
-
-              console.log(`Building ${buildingIndex + 1}: Requesting elevator. Source: ${floor}, Destination given by button: ${destinationFloorFromButton}`);
-              requestElevator(buildingIndex,  floor, destinationFloorFromButton);
-            }}
-            ref={(el: HTMLDivElement | null) => (floorRefs.current[floor] = el)}
-          />
-        );
-      })}
-
-      {/* Elevator visuals */}
-      <div style={{ display: "flex" }}>
-
-      {manager.elevators.map((elevator, elevatorIndex) => (
-       <div key={elevator.id} style={{  position: "absolute", top: 0, left: `${200 + (elevatorIndex * 100)}px` }}>
-        <ElevatorVisual
-        key={elevator.id}
-        elevatorFSM={elevator}
-        floorRefs={floorRefs.current}
-        />
+      <div style={{ display: "flex", flexDirection: "row", gap: "30px" }}>
+        {/* Floors Area */}
+        <div style={{ width: floorColumnWidth, position: "relative", display: "flex", flexDirection: "column" }}>
+          {Array.from({
+            length: totalFloors,
+          }).map((_, i) => {
+            const floor = totalFloors - 1 - i; 
+            return (
+              <Floor
+                key={floor}
+                floorNumber={floor}
+                buildingIndex={buildingIndex}
+                onRequest={(destinationFloorFromButton) => {
+                  console.log(
+                    `Building ${
+                      buildingIndex + 1
+                    }: Requesting elevator. Source: ${floor}, Destination given by button: ${destinationFloorFromButton}`
+                  );
+                  requestElevator(
+                    buildingIndex,
+                    floor,
+                    destinationFloorFromButton
+                  );
+                }}
+                ref={(el: HTMLDivElement | null) =>
+                  (floorRefs.current[floor] = el)
+                }
+              />
+            );
+          })}
         </div>
-      ))}
+
+        <div style={{ position: "relative", flexGrow: 1 }}> 
+          {manager.elevators.map((elevator, elevatorIndex) => (
+            <div
+              key={elevator.id}
+              style={{
+                position: "absolute", 
+                top: 0,
+                left: `${elevatorIndex * elevatorSlotWidth}px`,
+              }}
+            >
+              <ElevatorVisual
+                elevatorFSM={elevator}
+                floorRefs={floorRefs.current}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

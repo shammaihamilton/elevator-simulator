@@ -1,10 +1,154 @@
+// import React, { useEffect, useRef } from "react";
+// import { motion } from "framer-motion";
+// import elvImg from "../assets/elv.png";
+// import { ElevatorDoor } from "./ElevatorDoor";
+// import { ElevatorDoorState } from "../types/enums";
+// import { IElevatorFSM } from "@/types/interfaces";
+// import dingSound from "../assets/ding.mp3";
+
+// interface ElevatorProps {
+//   y: number;
+//   doorState: ElevatorDoorState;
+//   playDing: boolean;
+//   animationDuration: number;
+//   elevatorFSM: IElevatorFSM;
+// }
+
+// export const Elevator: React.FC<ElevatorProps> = ({
+//   y,
+//   doorState,
+//   playDing,
+//   animationDuration,
+//   elevatorFSM,
+// }) => {
+//   const audioRef = useRef<HTMLAudioElement | null>();
+//   const prevYRef = useRef(y);
+
+//   const doorAnimationDuration = elevatorFSM.timing.doorOpenTimeMs / 1000; // Convert to seconds
+
+
+//   // Effect to play the ding sound
+//   useEffect(() => {
+//     if (playDing && audioRef.current) {
+//       audioRef.current.currentTime = 0;
+//       audioRef.current
+//         .play()
+//         .catch((err) => console.warn("Ding failed to play:", err));
+//     }
+//   }, [playDing]);
+
+// // Effect to handle the elevator's Y position
+//   useEffect(() => {
+//     if (prevYRef.current !== y) {
+//       console.log(
+//         `Elevator ${elevatorFSM.id} moving to Y: ${y}, Floor: ${elevatorFSM.currentFloor}`
+//       );
+//       prevYRef.current = y;
+//     }
+//   }, [y, elevatorFSM.id, elevatorFSM.currentFloor]);
+
+//   return (
+//     <>
+//       <motion.div
+//         initial={false}
+//         animate={{ y: y }}
+//         transition={{
+//           duration: animationDuration,
+//           ease: "linear",
+//           onComplete: () => {
+//             console.log(
+//               `Elevator ${elevatorFSM.id} completed animation to Y: ${y}`
+//             );
+//           },
+//         }}
+//         style={{
+//           margin: "20px",
+//           position: "absolute",
+//           left: "0px",
+//           width: "70px",
+//           height: "70px",
+//           backgroundColor: "#333",
+//           display: "flex",
+//           justifyContent: "space-between",
+//           border: "2px solid #555",
+//           alignItems: "center",
+//           boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)",
+//           borderRadius: "5px",
+//           overflow: "hidden",
+//           flexDirection: "column",
+
+//           zIndex: 10,
+//         }}
+//       >
+//         <div
+//           className="elevator-cabin"
+//           style={{
+//             width: "80px",
+//             height: "80px",
+//             backgroundColor: "white",
+//             display: "flex",
+//             justifyContent: "center",
+//             alignItems: "center",
+//             position: "relative",
+//             overflow: "hidden",
+//           }}
+//         >
+//           <img
+//             src={elvImg}
+//             alt="Elevator"
+//             style={{
+//               position: "absolute",
+//               width: "100%",
+//               height: "100%",
+//               objectFit: "cover",
+//             }}
+//           />
+
+//           <div
+//             style={{
+//               position: "absolute",
+//               top: "5px",
+//               fontSize: "18px",
+//               fontWeight: "bold",
+//               color: "lightgreen",
+//               zIndex: 5,
+//               borderRadius: "50%",
+//               width: "25px",
+//               height: "25px",
+//               display: "flex",
+//               justifyContent: "center",
+//               alignItems: "center",
+//             }}
+//           >
+//             {elevatorFSM.currentFloor}
+//           </div>
+//         </div>
+//         <ElevatorDoor
+//           doorState={doorState}
+//           doorAnimationDuration={doorAnimationDuration}
+//         />
+
+//       </motion.div>
+//       <audio
+//         ref={(el) => (audioRef.current = el)}
+//         src={dingSound}
+//         preload="auto"
+//         loop={false}
+//         style={{ display: "none" }}
+//       />
+//     </>
+//   );
+// };
+
+// export default Elevator;
+// c:\Users\shamm\Desktop\elevator-simulator\elevator-simulator\src\components\Elevator.tsx
 import React, { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import elvImg from "../assets/elv.png";
+import elvImg from "../assets/elv.png"; // Assuming this path is correct relative to src
 import { ElevatorDoor } from "./ElevatorDoor";
 import { ElevatorDoorState } from "../types/enums";
 import { IElevatorFSM } from "@/types/interfaces";
-import dingSound from "../assets/ding.mp3";
+import dingSound from "../assets/ding.mp3"; // Assuming this path is correct
 
 interface ElevatorProps {
   y: number;
@@ -21,10 +165,11 @@ export const Elevator: React.FC<ElevatorProps> = ({
   animationDuration,
   elevatorFSM,
 }) => {
-  const audioRef = useRef<HTMLAudioElement | null>();
+  const audioRef = useRef<HTMLAudioElement | null>(null); // Corrected ref type
   const prevYRef = useRef(y);
 
-  const doorAnimationDuration = elevatorFSM.timing.doorOpenTimeMs / 1000; // Convert to seconds
+  // Ensure doorAnimationDuration is positive and sensible
+  const doorAnimDur = Math.max(0.1, elevatorFSM.timing.doorTransitionTimeMs / 1000);
 
 
   // Effect to play the ding sound
@@ -33,16 +178,16 @@ export const Elevator: React.FC<ElevatorProps> = ({
       audioRef.current.currentTime = 0;
       audioRef.current
         .play()
-        .catch((err) => console.warn("Ding failed to play:", err));
+        .catch((err) => console.warn(`[${elevatorFSM.id}] Ding failed to play:`, err));
     }
-  }, [playDing]);
+  }, [playDing, elevatorFSM.id]); // Added elevatorFSM.id for context in logs
 
-// Effect to handle the elevator's Y position
+// Effect to handle the elevator's Y position logging (for debugging)
   useEffect(() => {
     if (prevYRef.current !== y) {
-      console.log(
-        `Elevator ${elevatorFSM.id} moving to Y: ${y}, Floor: ${elevatorFSM.currentFloor}`
-      );
+      // console.log(
+      //   `Elevator ${elevatorFSM.id} moving to Y: ${y}, Floor: ${elevatorFSM.currentFloor}`
+      // );
       prevYRef.current = y;
     }
   }, [y, elevatorFSM.id, elevatorFSM.currentFloor]);
@@ -50,91 +195,100 @@ export const Elevator: React.FC<ElevatorProps> = ({
   return (
     <>
       <motion.div
-        initial={false}
+        initial={false} // Avoid initial animation from 0,0 if y is already set
         animate={{ y: y }}
         transition={{
-          duration: animationDuration,
+          duration: animationDuration > 0 ? animationDuration : 0.1, // Ensure duration is positive
           ease: "linear",
-          onComplete: () => {
-            console.log(
-              `Elevator ${elevatorFSM.id} completed animation to Y: ${y}`
-            );
-          },
+          // onComplete: () => { // onComplete can be useful for FSM updates if needed
+          //   console.log(
+          //     `Elevator ${elevatorFSM.id} completed animation to Y: ${y}`
+          //   );
+          // },
         }}
         style={{
-          margin: "20px",
+          // margin: "20px", // Margin might be better on the parent positioning div
           position: "absolute",
-          left: "0px",
+          left: "0px", // Positioned by parent
           width: "70px",
           height: "70px",
-          backgroundColor: "#333",
+          // backgroundColor: "#333", // Image will cover this
           display: "flex",
-          justifyContent: "space-between",
+          // justifyContent: "space-between", // Not needed with current layout
           border: "2px solid #555",
           alignItems: "center",
           boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)",
           borderRadius: "5px",
-          overflow: "hidden",
-          flexDirection: "column",
-
-          zIndex: 10,
+          overflow: "hidden", // Important for door animations
+          flexDirection: "column", // For internal layout if any
+          zIndex: 10, // Ensure elevator is above floors if overlapping
         }}
       >
+        {/* Cabin Visuals */}
         <div
-          className="elevator-cabin"
+          className="elevator-cabin-visuals"
           style={{
-            width: "80px",
-            height: "80px",
-            backgroundColor: "white",
+            width: "100%", // Take full width of motion.div
+            height: "100%", // Take full height of motion.div
+            // backgroundColor: "white", // Covered by image
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            position: "relative",
-            overflow: "hidden",
+            position: "relative", // For absolute positioning of children like display
+            overflow: "hidden", // Ensure image fits
           }}
         >
           <img
             src={elvImg}
-            alt="Elevator"
+            alt={`Elevator ${elevatorFSM.id.slice(-1)}`}
             style={{
               position: "absolute",
               width: "100%",
               height: "100%",
-              objectFit: "cover",
+              objectFit: "cover", // Ensure image covers the area
             }}
           />
 
+          {/* Floor Display */}
           <div
             style={{
               position: "absolute",
-              top: "5px",
-              fontSize: "18px",
+              top: "2px", // Adjusted for better visibility
+              left: "50%",
+              transform: "translateX(-50%)", // Center the display
+              padding: "1px 4px",
+              fontSize: "14px", // Slightly smaller for better fit
               fontWeight: "bold",
-              color: "lightgreen",
-              zIndex: 5,
-              borderRadius: "50%",
-              width: "25px",
-              height: "25px",
+              color: "white",
+              backgroundColor: "rgba(0,0,0,0.6)", // Background for readability
+              zIndex: 15, // Above image, below doors if they were to overlap text
+              borderRadius: "3px",
+              // width: "25px", // Let content define width
+              // height: "25px", // Let content define height
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
+              textAlign: "center",
+              minWidth: "20px", // Ensure it's visible even for single digit
             }}
           >
             {elevatorFSM.currentFloor}
           </div>
         </div>
+
+        {/* Doors - Rendered on top of cabin visuals */}
         <ElevatorDoor
           doorState={doorState}
-          doorAnimationDuration={doorAnimationDuration}
+          doorAnimationDuration={doorAnimDur}
         />
 
       </motion.div>
       <audio
-        ref={(el) => (audioRef.current = el)}
+        ref={audioRef} // Corrected ref assignment
         src={dingSound}
         preload="auto"
         loop={false}
-        style={{ display: "none" }}
+        style={{ display: "none" }} // Keep hidden
       />
     </>
   );

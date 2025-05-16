@@ -2,8 +2,6 @@ import { ElevatorStateObject, ElevatorTimingSettings, PassengerRequest } from '.
 import { ElevatorState, ElevatorDoorState, RequestStatus } from '../types/enums';
 import { Queue } from '../data-structures/Queue';
 import { ElevatorTimingManager } from './ElevatorTimingManager';
-import { generateId } from '../utils/idGenerator'; // For internal requests
-import { RequestTimingData } from './RequestTimingData'; // For internal requests
 
 export class ElevatorFSM implements ElevatorFSM {
   id: string;
@@ -25,33 +23,35 @@ export class ElevatorFSM implements ElevatorFSM {
   }
 
   update(currentTime: number): void {
+
+     if (this.timingManager.isPaused()) {
+      // console.log(`[${this.id}] FSM update skipped, TimingManager is paused.`);
+      return; // Don't process FSM logic if its timers are paused
+    }
+
+
     if (!this.timingManager.isActionComplete(currentTime)) {
       return;
     }
 
+    // If the queue is empty, return to the base floor
     if (this.queue.isEmpty()) {
+      // Check if the elevator is at the base floor
       if (this.state !== ElevatorState.IDLE) {
         this.state = ElevatorState.IDLE;
         this.doorState = ElevatorDoorState.CLOSED;
         this.timingManager.reset();
       }
+      // If the elevator is not at the base floor
       if (this.currentFloor !== this.designatedBaseFloor) {
-        const returnToBaseRequest: PassengerRequest = {
-          id: generateId(`internal-return-${this.id}-${currentTime}`),
-          sourceFloor: this.currentFloor,
-          destinationFloor: this.designatedBaseFloor,
-          pickedUp: false, 
-          status: RequestStatus.IN_TRANSIT, 
-          requestedAt: new RequestTimingData(currentTime), 
-        };
-        this.addStop(returnToBaseRequest);
+        this.reset(this.designatedBaseFloor);
       } else {
         return;
       }
     }
 
     const currentRequest = this.queue.peek();
-    if (!currentRequest) { return; }
+    if (!currentRequest) { return }
     const targetFloor = currentRequest.pickedUp ? currentRequest.destinationFloor : currentRequest.sourceFloor;
 
     switch (this.state) {
@@ -136,11 +136,25 @@ export class ElevatorFSM implements ElevatorFSM {
         break;
     }
   }
-
+  pauseFSM(currentTime: number): void {
+    // console.log(`[${this.id}] FSM pause requested at ${currentTime}`);
+    this.timingManager.pause(currentTime);
+  }
   addStop(request: PassengerRequest): void {
     this.queue.enqueue(request);
   }
 
+  resumeFSM(currentTime: number): void {
+    // console.log(`[${this.id}] FSM resume requested at ${currentTime}`);
+    this.timingManager.resume(currentTime);
+  }
+
+  isFSMPaused(): boolean {
+    return this.timingManager.isPaused();
+  }
+  getNextCriticalTime(): number | null {
+    return this.timingManager.getNextCriticalTime();
+  }
   calculateETA(targetFloorQuery: number): number {
     let eta = 0;
     let simulatedFloor = this.currentFloor;

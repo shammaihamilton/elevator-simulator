@@ -1,10 +1,10 @@
-// src/components/Layout.tsx
+
 import { Link, Outlet } from 'react-router-dom';
 
 export default function Layout() {
   return (
     <div>
-      {/* Fixed nav at top of viewport */}
+ 
       <nav style={{
         position: 'fixed',
         top: 0,
@@ -12,19 +12,20 @@ export default function Layout() {
         right: 0,
         backgroundColor: '#333',
         padding: '1rem',
-        zIndex: 1000
+        zIndex: 1000, 
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)' 
       }}>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', gap: '2rem', justifyContent: 'center' }}>
-          <li><Link to="/" style={{ color: 'white', textDecoration: 'none' }}>Home</Link></li>
-          <li><Link to="/simulation" style={{ color: 'white', textDecoration: 'none' }}>Simulation</Link></li>
-          <li><Link to="/configure" style={{ color: 'white', textDecoration: 'none' }}>Full Configure</Link></li>
+          <li><Link to="/" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem' }}>Home</Link></li>
+          <li><Link to="/simulation" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem' }}>Simulation</Link></li>
+          <li><Link to="/configure" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem' }}>Full Configure</Link></li>
         </ul>
       </nav>
 
-      {/* Push content below fixed nav */}
-      <main style={{ padding: '0 2rem', marginTop: '4rem' }}>
+      <main style={{ padding: '1rem 2rem', marginTop: 'calc(4rem + 2px)' }}> 
         <Outlet />
       </main>
     </div>
   );
 }
+

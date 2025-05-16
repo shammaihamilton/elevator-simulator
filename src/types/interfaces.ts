@@ -15,8 +15,13 @@ export interface SimulationState {
   requestElevator: (buildingIndex: number, source: number, destination: number) => void;
   tick: () => void;
   reset: () => void;
-  stop: () => void;
+  pauseSimulation: () => void; // For global pause
+  resumeSimulation: () => void; // For global resume
+  // isPaused: () => boolean; // Removed: Use the state property directly
   updateSettings: (newSettings: Partial<AppSettings>) => void;
+
+  // State properties
+  isPaused: boolean; // Added: Actual pause state
 }
 
 export interface PassengerRequest {
@@ -40,7 +45,6 @@ export interface BuildingSettings {
 
 export interface ElevatorTimingSettings {
     doorOpenTimeMs: number;
-    timePerFloorMs: number;
     delayPerFloorMs: number;
     doorTransitionTimeMs: number;
     floorTravelTimeMs: number;
@@ -63,15 +67,15 @@ export interface AppSettings {
 export interface IElevatorManager {
   id: string;
   elevators: IElevatorFSM[];
+  isPaused: boolean; // Added
+
   handleRequest(request: PassengerRequest): void;
   tick(currentTime: number): void;
   reset(): void;
   getElevatorStates(): ElevatorStateObject[];
   getElevatorById(id: string): IElevatorFSM | undefined;
-  getElevatorByIndex(index: number): IElevatorFSM | undefined;
-  getElevatorStatesByBuilding(buildingId: string): IElevatorFSM[];
-  stop(id: string): void;
-  stopAll(): void;
+  pause(id: string): void;
+  resume(id: string): void;
 } 
 
 export interface IElevatorFSM {
@@ -88,7 +92,9 @@ export interface IElevatorFSM {
   addStop(request: PassengerRequest): void;
   calculateETA(targetFloorQuery: number, currentTime: number): number;
   reset(initialFloor?: number): void;
-  stop(): void;
+  pauseFSM(currentTime: number): void;    // Added
+  resumeFSM(currentTime: number): void;   // Added
+  isFSMPaused(): boolean;                 // Added
   getState(): ElevatorStateObject;
   getId(): string;
   getCurrentFloor(): number;
@@ -138,4 +144,7 @@ export interface IElevatorTimingManager {
 
   reset(): void;
   clearDoorOpenTimer(): void;
+  pause(currentTime: number): void;   
+  resume(currentTime: number): void;  
+  isPaused(): boolean;   
 }

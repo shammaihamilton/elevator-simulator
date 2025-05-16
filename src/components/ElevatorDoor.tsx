@@ -1,18 +1,28 @@
-// ElevatorDoor.tsx
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ElevatorDoorState } from '../types/enums';
 
 interface ElevatorDoorProps {
   doorState: ElevatorDoorState;
-  doorAnimationDuration: number;
+  doorAnimationDuration: number; // Expecting duration in seconds
 }
 
-export const ElevatorDoor: React.FC<ElevatorDoorProps> = ({ 
-  doorState, 
-  doorAnimationDuration 
+export const ElevatorDoor: React.FC<ElevatorDoorProps> = ({
+  doorState,
+  doorAnimationDuration
 }) => {
-  const isOpen = doorState === 'OPEN';
+  const isOpen = doorState === ElevatorDoorState.OPEN || doorState === ElevatorDoorState.OPENING;
+  const isClosed = doorState === ElevatorDoorState.CLOSED || doorState === ElevatorDoorState.CLOSING;
+
+  let targetWidth = '50%'; 
+  if (isOpen) {
+    targetWidth = '0%';
+  } else if (isClosed) {
+    targetWidth = '50%';
+  }
+
+  const animationDuration = Math.max(0.1, doorAnimationDuration);
 
   return (
     <div
@@ -23,28 +33,31 @@ export const ElevatorDoor: React.FC<ElevatorDoorProps> = ({
         height: '100%',
         width: '100%',
         display: 'flex',
-        justifyContent: 'space-between',
         pointerEvents: 'none',
-        zIndex: 10 
+        zIndex: 20 
       }}
     >
+      {/* Left Door Panel */}
       <motion.div
-        animate={{ width: isOpen ? '0%' : '50%' }}
-        transition={{ duration: doorAnimationDuration / 10 }}
-        style={{ 
-          height: '100%', 
-          backgroundColor: '#777',
-          transformOrigin: 'left' 
+        initial={false} 
+        animate={{ width: targetWidth }}
+        transition={{ duration: animationDuration, ease: "easeInOut" }}
+        style={{
+          height: '100%',
+          backgroundColor: '#777', 
         }}
       />
-      
+
+      {/* Right Door Panel */}
       <motion.div
-        animate={{ width: isOpen ? '0%' : '50%' }}
-        transition={{ duration: doorAnimationDuration / 10 }}
-        style={{ 
-          height: '100%', 
-          backgroundColor: '#777',
-          transformOrigin: 'right' 
+        initial={false}
+        animate={{ width: targetWidth }}
+        transition={{ duration: animationDuration, ease: "easeInOut" }}
+        style={{
+          height: '100%',
+          backgroundColor: '#777', 
+          position: 'absolute',
+          right: 0, 
         }}
       />
     </div>

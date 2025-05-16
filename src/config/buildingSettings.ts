@@ -9,7 +9,6 @@ export const buildingsSettings: AppSettings = {
   },
   timing: {
     doorOpenTimeMs: 3000,
-    timePerFloorMs: 2000,
     delayPerFloorMs: 1000,
     doorTransitionTimeMs: 1500,
     floorTravelTimeMs: 2000,
