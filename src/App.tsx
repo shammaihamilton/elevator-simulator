@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 
 
 import BuildingContainer from './components/BuildingContainer';
+import GlobalConfigPage from './components/GlobalConfigPage';
 
 
 
@@ -20,7 +21,7 @@ function App() {
           <Route index element={<HomePage />} />
           {/* <Route path="/simulation" element={<Building config={defaultElevatorSystemConfig} />} /> */}
           <Route path="/simulation" element={<BuildingContainer />} />
-          {/* <Route path="/configure" element={<SimulationPage />} /> */}
+          <Route path="/configure" element={<GlobalConfigPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

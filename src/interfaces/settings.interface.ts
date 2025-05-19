@@ -1,3 +1,8 @@
+
+
+
+
+
 export interface BuildingSettings {
     buildings: number;
     floorsPerBuilding: number;
@@ -19,6 +24,15 @@ export interface SimulationSettings {
 
 
 }
+export interface BuildingSpecificSettings {
+  floorsPerBuilding?: number;
+  elevatorsPerBuilding?: number;
+  initialElevatorFloor?: number;
+  doorOpenTimeMs?: number;
+  doorTransitionTimeMs?: number;
+  floorTravelTimeMs?: number;
+  delayPerFloorMs?: number;
+}
 
 export interface AppSettings {
   buildings: BuildingSettings;
@@ -26,4 +40,22 @@ export interface AppSettings {
   simulation: SimulationSettings;
 }
 
+export interface BuildingSpecificSettings {
+  floorsPerBuilding?: number;
+  elevatorsPerBuilding?: number;
+  initialElevatorFloor?: number;
+  doorOpenTimeMs?: number;
+  delayPerFloorMs?: number;
+  doorTransitionTimeMs?: number;
+  floorTravelTimeMs?: number;
+}
+export interface EffectiveBuildingSettings {
+  floorsPerBuilding: number;
+  elevatorsPerBuilding: number;
+  initialElevatorFloor: number;
+  doorOpenTimeMs: number;
+  delayPerFloorMs: number;
+  doorTransitionTimeMs: number;
+  floorTravelTimeMs: number;
+}
  

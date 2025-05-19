@@ -53,7 +53,7 @@ const ElevatorVisual: React.FC<ElevatorVisualProps> = ({
         `[${elevatorFSM.id}] Y-Update-Effect: Failed to calculate Y for FSM floor ${elevatorFSM.currentFloor}. getDomBasedYForFloor returned null. Visual Y remains ${y}.`
       );
     }
-  }, [elevatorFSM.currentFloor, floorRefs, elevatorFSM.id]);
+  }, [elevatorFSM.currentFloor, floorRefs, elevatorFSM.id, y]);
 
   // Sync local doorState with FSM's doorState
   useEffect(() => {

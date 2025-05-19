@@ -4,7 +4,7 @@ export const appSettings: AppSettings = {
   buildings: {
     buildings: 1,
     floorsPerBuilding: 8,
-    elevatorsPerBuilding: 3,
+    elevatorsPerBuilding: 4,
     initialElevatorFloor: 0,
   },
   timing: {
