@@ -1,6 +1,6 @@
 import { ElevatorManager } from '../core/ElevatorManager';
 import { ElevatorFactory } from './ElevatorFactory';
-import { ElevatorTimingSettings } from '../types/interfaces';
+import { ElevatorTimingSettings } from '@/interfaces';
 
 export class ElevatorManagerFactory {
   static create(

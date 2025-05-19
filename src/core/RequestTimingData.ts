@@ -1,6 +1,6 @@
 
 
-import { IRequestTimingData } from '../types/interfaces';
+import { IRequestTimingData } from '../interfaces';
 
 export class RequestTimingData implements IRequestTimingData {
   requestedAt: number;

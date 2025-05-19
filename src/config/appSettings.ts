@@ -1,7 +1,7 @@
-import { AppSettings } from '../types/interfaces';
+import { AppSettings } from '@/interfaces';
 
-export const buildingsSettings: AppSettings = {
-  building: {
+export const appSettings: AppSettings = {
+  buildings: {
     buildings: 1,
     floorsPerBuilding: 8,
     elevatorsPerBuilding: 3,
@@ -9,8 +9,8 @@ export const buildingsSettings: AppSettings = {
   },
   timing: {
     doorOpenTimeMs: 3000,
-    delayPerFloorMs: 1000,
-    doorTransitionTimeMs: 1500,
+    delayPerFloorMs: 2000,
+    doorTransitionTimeMs: 1000,
     floorTravelTimeMs: 2000,
   },
   simulation: {

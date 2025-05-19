@@ -1,5 +1,5 @@
 import { ElevatorFSM } from '../core/ElevatorFSM';
-import { ElevatorTimingSettings } from '../types/interfaces';
+import { ElevatorTimingSettings } from '@/interfaces';
 
 export class ElevatorFactory {
   static create(config: {

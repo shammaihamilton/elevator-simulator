@@ -1,17 +1,17 @@
-import { PassengerRequest, IRequestTimingData } from '../types/interfaces';
-import { buildingsSettings } from '../config/buildingSettings';
+import { PassengerRequest, IRequestTimingData } from '@/interfaces';
+import { appSettings } from '../config/appSettings';
 import { generateId } from '../utils/idGenerator';
 import { RequestTimingData } from '../core/RequestTimingData';
 import { RequestStatus } from '../types/enums';
 
 export class ElevatorRequestFactory {
-  static create(sourceFloor: number, destinationFloor: number): PassengerRequest {
+  static create(sourceFloor: number, destinationFloor: number, currentTime: number): PassengerRequest {
     const floorDiff = Math.abs(sourceFloor - destinationFloor);
     const estimatedServiceTimeMs =
-      floorDiff * buildingsSettings.timing.floorTravelTimeMs + buildingsSettings.timing.delayPerFloorMs;
+      floorDiff * appSettings.timing.floorTravelTimeMs + appSettings.timing.delayPerFloorMs;
 
     const id = generateId(`request: {sourceFloor:${sourceFloor}, destinationFloor: ${destinationFloor}}`);
-    const requestedAt: IRequestTimingData = new RequestTimingData(Date.now());
+    const requestedAt: IRequestTimingData = new RequestTimingData(currentTime);
 
     const request: PassengerRequest = {
       id,

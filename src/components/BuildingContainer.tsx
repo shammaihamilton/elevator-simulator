@@ -1,11 +1,8 @@
-
-
-import React, { useEffect } from "react";
-import { buildingsSettings } from "@/config/buildingSettings";
+import React, { useEffect, useRef } from "react";
+import { appSettings } from "@/config/appSettings";
 import Building from "@/components/Building";
 import { useSimulationStore } from "@/store/simulationStore";
-import { SimulationControls } from '@components/SimulationControls';
-
+import { SimulationControls } from "./SimulationControls";
 
 const BuildingContainer: React.FC = () => {
   const tick = useSimulationStore((state) => state.tick);
@@ -16,25 +13,40 @@ const BuildingContainer: React.FC = () => {
   const pauseSim = useSimulationStore((state) => state.pauseSimulation);
   const resumeSim = useSimulationStore((state) => state.resumeSimulation);
   const isSimPaused = useSimulationStore((state) => state.isPaused);
-
-  const [isSimulationRunning, setIsSimulationRunning] = React.useState(true);
+  
+  // Use a ref to track if we have an active interval
+  const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isSimulationRunning) return;
-    console.log("Setting up simulation interval. Tick rate:", simulationTickMs);
-    const intervalId = setInterval(() => {
+    // Clear any existing interval first to prevent duplicates
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (isSimPaused) {
+      console.log("BuildingContainer Effect: Simulation is paused, not setting interval");
+      return;
+    }
+    
+    console.log("BuildingContainer Effect: Setting up simulation interval. Tick rate:", simulationTickMs);
+    // Store the interval ID in our ref
+    intervalRef.current = window.setInterval(() => {
       tick();
     }, simulationTickMs);
 
     return () => {
-      console.log("Clearing simulation interval.");
-      clearInterval(intervalId);
+      console.log("BuildingContainer Effect: Cleaning up simulation interval");
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
-  }, [tick, simulationTickMs, isSimulationRunning]);
+  }, [tick, simulationTickMs, isSimPaused]);
 
   return (
     <div
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px" /* Added overall padding */ }}
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px" }}
     >
       <h1>Elevator Simulation</h1>
       <div
@@ -50,26 +62,18 @@ const BuildingContainer: React.FC = () => {
         <button
           onClick={() => {
             resetSimulation();
-            setIsSimulationRunning(true);
           }}
         >
           Restart Simulation
         </button>
         <button
           onClick={() => {
-            setIsSimulationRunning(false);
-            
-            if (isSimPaused) {
-              resumeSim();
-            } else {
-              pauseSim();
-            };
+            if (isSimPaused) resumeSim(); else pauseSim();
           }}
         >
           {isSimPaused ? "Resume Simulation" : "Pause Simulation"} 
         </button>
       </div>
-
 
       {/* Container for buildings */}
       <div
@@ -82,30 +86,24 @@ const BuildingContainer: React.FC = () => {
           marginTop: "20px", 
         }}
       >
-        
-        {/* Controls Column */}
-        <div style={{ flexShrink: 0 /* Prevent controls from shrinking */ }}>
-          <SimulationControls  />
-        </div>
-
-        {/* Buildings Display Area (will take remaining space and wrap buildings) */}
+        {/* Buildings Display Area */}
         <div
           style={{
-            flexGrow: 1, // Allow this area to grow and take up remaining horizontal space
+            flexGrow: 1,
             display: "flex",
             flexDirection: "row",
             flexWrap: "wrap",
-            justifyContent: "center", // Center buildings if they don't fill the width
-            // alignItems: "flex-start", // Align buildings to the top of their rows
+            justifyContent: "center",
           }}
         >
-          {Array.from({ length: buildingsSettings.building.buildings }).map(
+          <SimulationControls />
+          {Array.from({ length: appSettings.buildings.buildings }).map(
             (_, idx) => (
               <div
                 key={idx}
                 style={{
-                  margin: "10px", // Margin around each building
-                  position: "relative", // For internal positioning if Building component needs it
+                  margin: "10px",
+                  position: "relative",
                 }}
               >
                 <Building buildingIndex={idx} />

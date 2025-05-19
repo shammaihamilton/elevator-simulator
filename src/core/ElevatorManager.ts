@@ -1,27 +1,81 @@
 
 // core/ElevatorManager.ts
-import { IElevatorFSM, ElevatorStateObject, PassengerRequest, IElevatorManager } from '../types/interfaces';
+import { ElevatorState, DispatchMethod } from '@/types/enums';
+import { IElevatorFSM, ElevatorStateObject, PassengerRequest, IElevatorManager, SelectionConfig } from '../interfaces';
+
+
 
 
 export class ElevatorManager implements IElevatorManager {
   id: string;
   elevators: IElevatorFSM[];
   isPaused: boolean = false; // Added
+  config: SelectionConfig;
+  private mode: DispatchMethod
 
-  constructor(elevators: IElevatorFSM[]) {
-    this.id = elevators[0].id.split('-')[0]; // Assuming all elevators have the same prefix
+
+  constructor(elevators: IElevatorFSM[], cfg?: Partial<SelectionConfig>) {
+    if (!elevators.length) throw new Error('ElevatorManager requires at least one car');
+    this.id = elevators[0].id.split('-')[0];
     this.elevators = elevators;
+    this.config = {                                  // defaults
+      queueWeightMs        : 1000,
+      wrongDirPenaltyMs    : 5000,
+      capacityFactorMs     : 2000,
+      ...cfg
+    };
+    this.mode = DispatchMethod.ETA_ONLY 
   }
 
-  handleRequest(request : PassengerRequest): void {
-    const { sourceFloor, requestedAt } = request;
-    const bestElevator = this.elevators.reduce((best, current) => {
-      const bestETA = best.calculateETA(sourceFloor, requestedAt.requestedAt);
-      const currentETA = current.calculateETA(sourceFloor, requestedAt.requestedAt);
-      return currentETA < bestETA ? current : best;
+  handleRequest(req: PassengerRequest, now: number): void {
+    const best = this.elevators.reduce((bestCar, curCar) => {
+      return this.metric(curCar, req, now) < this.metric(bestCar, req, now)
+        ? curCar
+        : bestCar;
     });
-    bestElevator.addStop(request);
+
+    best.addStop(req);
   }
+
+    setDispatchMode(mode: DispatchMethod) {
+    this.mode = mode;
+  }
+  private metric(car: IElevatorFSM, req: PassengerRequest, now: number): number {
+    if (this.mode === DispatchMethod.ETA_ONLY) {
+      return car.calculateETA(req.sourceFloor, now);
+    }
+    return this.scoredMetric(car, req, now);
+  }
+
+  /* score = ETA + queue penalty + direction penalty + capacity penalty */
+  private scoredMetric(car: IElevatorFSM, req: PassengerRequest, now: number): number {
+    const { queueWeightMs, wrongDirPenaltyMs, capacityFactorMs } = this.config;
+
+    /* if the car is already scheduled to stop here, ignore it
+       (avoids duplicate requests) */
+    if (car.queueContainsFloor(req.sourceFloor)) return Number.POSITIVE_INFINITY;
+
+    // 1 ▸ raw ETA to pickup
+    const eta = car.calculateETA(req.sourceFloor, now);
+
+    // 2 ▸ queue length penalty
+    const queuePenalty = (car.queue as any).length?.()   // support Queue API or array‑like
+      ? (car.queue as any).length() * queueWeightMs
+      : car.queue.length()          * queueWeightMs;       // fallback to custom size()
+
+    // 3 ▸ moving in wrong direction?
+    const wrongDir = (
+      (car.state === ElevatorState.MOVING_UP   && car.getCurrentFloor() > req.sourceFloor) ||
+      (car.state === ElevatorState.MOVING_DOWN && car.getCurrentFloor() < req.sourceFloor)
+    ) ? wrongDirPenaltyMs : 0;
+
+    // 4 ▸ capacity penalty (optional getLoad(): 0–1)
+    const load     = (car as any).getLoad?.() ?? 0;
+    const capPen   = load * capacityFactorMs;
+
+    return eta + queuePenalty + wrongDir + capPen;
+  }
+
 
   tick(currentTime: number): void {
     this.elevators.forEach((elevator) => elevator.update(currentTime));

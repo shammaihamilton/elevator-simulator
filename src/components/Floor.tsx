@@ -1,119 +1,158 @@
-
-
 import { useSimulationStore } from "@/store/simulationStore";
-import React, { useEffect, useState, useCallback } from "react";
-import { ElevatorDoorState } from "@/types/enums";
+import React, { memo, useCallback, useMemo } from "react";
+import { RequestStatus } from "@/types/enums";
 
 interface FloorProps {
   floorNumber: number;
-  buildingIndex: number; 
-  onRequest: (destination: number) => void;
+  buildingIndex: number;
+  onRequest: (destinationFloorFromButton: number, sourceFloor: number) => void;
 }
 
-const floorHieght = 110; 
+const floorHeight = 110;
 
 const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
   ({ floorNumber, onRequest, buildingIndex }, ref) => {
-    const [callState, setCallState] = useState<'idle' | 'pending' | 'serviced'>('idle');
-    const manager = useSimulationStore((state) => state.managers[buildingIndex]);
+    // Access data from the store in a stable way
+    const floorStatuses = useSimulationStore((state) => state.floorStatuses);
 
-    const updateCallState = useCallback(() => {
-      if (!manager || !manager.elevators) {
-        setCallState('idle');
-        return;
-      }
-
-      let isCurrentlyServiced = false;
-      for (const elevator of manager.elevators) {
-        if (
-          elevator.currentFloor === floorNumber &&
-          (elevator.doorState === ElevatorDoorState.OPEN || elevator.doorState === ElevatorDoorState.OPENING)
-        ) {
-          isCurrentlyServiced = true;
-          break;
+    // Derive floor status data locally without calling getFloorStatus method
+    const floorData = useMemo(() => {
+      const key = `${buildingIndex}-${floorNumber}`;
+      return (
+        floorStatuses[key] || {
+          requestStatus: RequestStatus.PENDING_ASSIGNMENT,
+          etaSeconds: null,
+          isElevatorServicing: false,
         }
-      }
+      );
+    }, [floorStatuses, buildingIndex, floorNumber]);
 
-      if (isCurrentlyServiced) {
-        setCallState('serviced');
-        return;
-      }
+    const { requestStatus, etaSeconds, isElevatorServicing } = floorData;
 
-      let isCurrentlyPending = false;
-      for (const elevator of manager.elevators) {
-        if (elevator.queue.containsFloor(floorNumber)) {
-          isCurrentlyPending = true;
-          break;
-        }
-      }
+    // Memoize the request handler
+    const handleRequest = useCallback(() => {
+      onRequest(floorNumber, floorNumber);
+    }, [onRequest, floorNumber]);
 
-      if (isCurrentlyPending) {
-        setCallState('pending');
-      } else {
-        setCallState('idle');
-      }
-    }, [floorNumber, manager]); 
-    useEffect(() => {
-      updateCallState(); 
-      const intervalId = setInterval(updateCallState, 500); 
-      return () => clearInterval(intervalId);
-    }, [updateCallState]);
+    // Memoize derived values for the UI
+    const { backgroundColor, buttonText, buttonColor, isButtonDisabled } =
+      useMemo(() => {
+        // Background color based on status
+        const backgroundColor =
+          isElevatorServicing || requestStatus === RequestStatus.IN_TRANSIT
+            ? "#D4EFDF" // Green for arrived
+            : requestStatus === RequestStatus.WAITING_FOR_PICKUP
+            ? "#FEF9E7" // Yellow for waiting
+            : "transparent"; // Default
 
-    const handleRequest = () => {
-      onRequest(floorNumber); 
-      setCallState('pending'); 
-    };
+        // Button text based on status
+        const buttonText =
+          isElevatorServicing || requestStatus === RequestStatus.IN_TRANSIT
+            ? "Arrived"
+            : requestStatus === RequestStatus.WAITING_FOR_PICKUP
+            ? "Waiting"
+            : "Call";
+
+        // Button color based on status
+        const buttonColor =
+          isElevatorServicing || requestStatus === RequestStatus.IN_TRANSIT
+            ? "#2ECC71" // Green
+            : requestStatus === RequestStatus.WAITING_FOR_PICKUP
+            ? "#F39C12" // Orange
+            : "#3498DB"; // Blue
+
+        // Button disabled state
+        const isButtonDisabled =
+          requestStatus !== RequestStatus.PENDING_ASSIGNMENT;
+
+        return {
+          backgroundColor,
+          buttonText,
+          buttonColor,
+          isButtonDisabled,
+        };
+      }, [requestStatus, isElevatorServicing]);
 
     return (
       <div
         className="floor"
         style={{
-          height: floorHieght,
-          border: "2px solid black",
+          height: `${floorHeight}px`,
+          borderBottom: "1px solid #ccc",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 50px",
-          backgroundColor: (callState === 'pending' || callState === 'serviced') ? "#e0ffe0" : "transparent",
+          padding: "0 13px",
+          backgroundColor,
           transition: "background-color 0.3s ease",
         }}
         ref={ref}
       >
         <span
           style={{
-            fontSize: "1rem",
+            fontSize: "0.9rem",
             color: "black",
-            fontWeight: "bold",
-            marginRight: "10px",
+            fontWeight: "500",
+            backgroundColor: "white",
+            padding: "5px 5px",
+            borderRadius: "4px",
           }}
         >
           Floor {floorNumber}
         </span>
-        <button
-          onClick={handleRequest}
-          style={{
-            border: "black solid 2px",
-            borderRadius: "5px",
-            cursor: "pointer",
-            fontSize: "1rem",
-            backgroundColor:
-              callState === 'serviced' ? '#4CAF50' : // Green if serviced
-              callState === 'pending' ? '#FFC107' :  // Yellow/Orange if pending
-              '#007BFF', // Blue if idle
-            color: "white", // Text color for all states
-            padding: "10px 20px",
-            transition: "background-color 0.3s, color 0.3s, opacity 0.3s",
-
-            opacity: callState === 'serviced' ? 0.7 : 1,
-          }}
-          disabled={callState === 'serviced'}
-        >
-          Call
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {requestStatus === RequestStatus.WAITING_FOR_PICKUP &&
+            etaSeconds !== null &&
+            etaSeconds > 0 && (
+              <span
+                style={{
+                  position: "relative",
+                  fontSize: "0.9rem",
+                  color: "black",
+                  fontWeight: "500",
+                  backgroundColor: "#F9E79F",
+                  padding: "5px 5px",
+                  borderRadius: "4px",
+                }}
+              >
+                ETA: {etaSeconds}s
+              </span>
+            )}
+          {isElevatorServicing && (
+            <span
+              style={{
+                fontSize: "0.9rem",
+                color: "#D35400",
+                fontWeight: "bold",
+              }}
+            >
+              Arriving...
+            </span>
+          )}
+          <button
+            onClick={handleRequest}
+            style={{
+              padding: "8px 15px",
+              border: "1px solid transparent",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+              fontWeight: "500",
+              backgroundColor: buttonColor,
+              color: "white",
+              transition: "background-color 0.2s, opacity 0.2s",
+              opacity: isButtonDisabled ? 0.6 : 1,
+              pointerEvents: isButtonDisabled ? "none" : "auto",
+            }}
+            disabled={isButtonDisabled}
+          >
+            {buttonText}
+          </button>
+        </div>
       </div>
     );
   }
 );
 
-Floor.displayName = "Floor"; 
-export default Floor;
+Floor.displayName = "Floor";
+export default memo(Floor);

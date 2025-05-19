@@ -147,7 +147,7 @@ import { motion } from "framer-motion";
 import elvImg from "../assets/elv.png"; // Assuming this path is correct relative to src
 import { ElevatorDoor } from "./ElevatorDoor";
 import { ElevatorDoorState } from "../types/enums";
-import { IElevatorFSM } from "@/types/interfaces";
+import { IElevatorFSM } from "@/interfaces";
 import dingSound from "../assets/ding.mp3"; // Assuming this path is correct
 
 interface ElevatorProps {

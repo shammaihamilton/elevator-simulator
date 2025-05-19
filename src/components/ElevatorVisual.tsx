@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from "react";
-import { IElevatorFSM } from "@/types/interfaces";
+import { IElevatorFSM } from "@/interfaces";
 import { Elevator as ElevatorComponent } from "./Elevator";
 import { ElevatorDoorState } from "../types/enums";
 import { getDomBasedYForFloor } from "../utils/floorHelpers";
