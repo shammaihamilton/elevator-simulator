@@ -6,7 +6,6 @@ import styles from "./GlobalConfigPage.module.scss";
 import { useNavigate } from "react-router-dom";
 import EmbeddedBuildingConfig from "./EmbeddedBuildingConfig";
 import { BuildingFormData } from "../buildingConfigDialog/BuildingConfigDialog";
-// import { AppSettings } from "@/interfaces";
 import { SettingsSchema, AppSettings } from "@/config/settingsSchema"; // Use Zod-inferred AppSettings
 
 const GlobalConfigPage: React.FC = () => {
@@ -248,6 +247,7 @@ const handleSubmit = (e: React.FormEvent) => {
             <div style={{ color: "red", marginTop: "10px", textAlign: "left" }}>
               Please correct the errors before submitting. (See console for
               details)
+              <pre>{JSON.stringify(formErrors, null, 0)}</pre>
             </div>
           )}
         </div>

@@ -2,7 +2,7 @@ import { useSimulationStore } from "@/store/simulationStore";
 
 
 
-const CustomSettingsBadge = ({ buildingIndex }: { buildingIndex: number }) => {
+const CustomSettingsBadge = ({ buildingIndex, style }: { buildingIndex: number, style: string }) => {
   const hasCustomSettings = useSimulationStore(
     (state) => !!state.buildingSpecificSettings[buildingIndex]
   );
@@ -10,7 +10,8 @@ const CustomSettingsBadge = ({ buildingIndex }: { buildingIndex: number }) => {
   if (!hasCustomSettings) return null;
   
   return (
-    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded">
+    
+    <span className={style}>
       Custom Settings
     </span>
   );

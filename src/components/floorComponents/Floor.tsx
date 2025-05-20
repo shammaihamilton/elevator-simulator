@@ -1,6 +1,7 @@
 import { useSimulationStore } from "@/store/simulationStore";
 import React, { memo, useCallback, useMemo } from "react";
 import { RequestStatus } from "@/types/enums";
+import TimeDisplay from "../common/TimeDisplay";
 
 interface FloorProps {
   floorNumber: number;
@@ -28,7 +29,6 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
     }, [floorStatuses, buildingIndex, floorNumber]);
 
     const { requestStatus, etaSeconds, isElevatorServicing } = floorData;
-
     // Memoize the request handler
     const handleRequest = useCallback(() => {
       onRequest(floorNumber, floorNumber);
@@ -37,15 +37,13 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
     // Memoize derived values for the UI
     const { backgroundColor, buttonText, buttonColor, isButtonDisabled } =
       useMemo(() => {
-        // Background color based on status
         const backgroundColor =
           isElevatorServicing || requestStatus === RequestStatus.IN_TRANSIT
             ? "#D4EFDF" // Green for arrived
             : requestStatus === RequestStatus.WAITING_FOR_PICKUP
-            ? "#FEF9E7" // Yellow for waiting
+            ? "" // Yellow for waiting
             : "transparent"; // Default
 
-        // Button text based on status
         const buttonText =
           isElevatorServicing || requestStatus === RequestStatus.IN_TRANSIT
             ? "Arrived"
@@ -53,7 +51,6 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
             ? "Waiting"
             : "Call";
 
-        // Button color based on status
         const buttonColor =
           isElevatorServicing || requestStatus === RequestStatus.IN_TRANSIT
             ? "#2ECC71" // Green
@@ -61,7 +58,6 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
             ? "#F39C12" // Orange
             : "#3498DB"; // Blue
 
-        // Button disabled state
         const isButtonDisabled =
           requestStatus !== RequestStatus.PENDING_ASSIGNMENT;
 
@@ -93,7 +89,7 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
             fontSize: "0.9rem",
             color: "black",
             fontWeight: "500",
-            backgroundColor: "white",
+            backgroundColor: "lightgray",
             padding: "5px 5px",
             borderRadius: "4px",
           }}
@@ -103,32 +99,22 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {requestStatus === RequestStatus.WAITING_FOR_PICKUP &&
             etaSeconds !== null &&
-            etaSeconds > 0 && (
+            etaSeconds >= 0 && (
               <span
                 style={{
                   position: "relative",
                   fontSize: "0.9rem",
+                  textAlign: "center",
                   color: "black",
                   fontWeight: "500",
-                  backgroundColor: "#F9E79F",
+                  backgroundColor: "lightgray",
                   padding: "5px 5px",
                   borderRadius: "4px",
                 }}
               >
-                ETA: {etaSeconds}s
+                <TimeDisplay milliseconds={etaSeconds} />
               </span>
             )}
-          {isElevatorServicing && (
-            <span
-              style={{
-                fontSize: "0.9rem",
-                color: "#D35400",
-                fontWeight: "bold",
-              }}
-            >
-              Arriving...
-            </span>
-          )}
           <button
             onClick={handleRequest}
             style={{
@@ -141,7 +127,7 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
               backgroundColor: buttonColor,
               color: "white",
               transition: "background-color 0.2s, opacity 0.2s",
-              opacity: isButtonDisabled ? 0.6 : 1,
+              opacity: isButtonDisabled ? 0.8 : 1,
               pointerEvents: isButtonDisabled ? "none" : "auto",
             }}
             disabled={isButtonDisabled}

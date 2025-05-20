@@ -5,7 +5,7 @@ import { useSimulationStore } from "@/store/simulationStore";
 import { useEffectiveBuildingSettings } from "@/hooks/useEffectiveBuildingSettings";
 import FloorItem from "@/components/floorComponents/FloorItem";
 import ElevatorVisual from "@/components/elevatorComponents/ElevatorVisual";
-import CustomSettingsBadge from "@/components/CustomSettingsBadge";
+import CustomSettingsBadge from "@/components/common/CustomSettingsBadge";
 import BuildingConfigDialog from "@/components/buildingConfigDialog/BuildingConfigDialog";
 import styles from "./Building.module.scss";
 
@@ -50,7 +50,7 @@ const Building: React.FC<BuildingProps> = ({ buildingIndex }) => {
       {/* … */}
       <div className={styles.header}>
         <h2>Building {buildingIndex + 1}</h2>
-        <CustomSettingsBadge buildingIndex={buildingIndex} />
+        <CustomSettingsBadge buildingIndex={buildingIndex} style={styles.customBadge}/>
         <button
           className={styles.configBtn}
           onClick={() => setIsConfigOpen(true)}

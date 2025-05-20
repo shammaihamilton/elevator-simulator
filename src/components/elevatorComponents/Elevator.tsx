@@ -37,14 +37,12 @@ export const Elevator: React.FC<ElevatorProps> = ({
         .play()
         .catch((err) => console.warn(`[${elevatorFSM.id}] Ding failed to play:`, err));
     }
-  }, [playDing, elevatorFSM.id]); // Added elevatorFSM.id for context in logs
-
+  }, [playDing, elevatorFSM.id]); 
+  
 // Effect to handle the elevator's Y position logging (for debugging)
   useEffect(() => {
     if (prevYRef.current !== y) {
-      // console.log(
-      //   `Elevator ${elevatorFSM.id} moving to Y: ${y}, Floor: ${elevatorFSM.currentFloor}`
-      // );
+
       prevYRef.current = y;
     }
   }, [y, elevatorFSM.id, elevatorFSM.currentFloor]);

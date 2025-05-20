@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 export const BuildingsSettingsSchema = z.object({
     numberOfBuildings: z.number().int().positive().default(1).describe("Total number of buildings in the simulation"),
-    floorsPerBuilding: z.number().int().positive().default(7),
+    floorsPerBuilding: z.number().int().min(2).positive().default(7),
     elevatorsPerBuilding: z.number().int().positive().default(3),
     initialElevatorFloor: z.number().int().min(0).default(0)
     }).refine(
@@ -14,12 +14,18 @@ export const BuildingsSettingsSchema = z.object({
       message: "Initial elevator floor must be less than the number of floors per building",
       path: ["initialElevatorFloor"], // Path of the error
     }
+    ).refine(
+    (data) => data.elevatorsPerBuilding <= data.floorsPerBuilding,
+    {
+      message: "Number of elevators per building must be less than or equal to the number of floors per building",
+      path: ["elevatorsPerBuilding"], // Path of the error
+    }
   )
 
   export const TimingSettingsSchema = z.object({
-    doorOpenTimeMs: z.number().positive().default(2000),
-    delayPerFloorMs: z.number().positive().default(1000),
-    doorTransitionTimeMs: z.number().positive().default(2000),
+    doorOpenTimeMs: z.number().positive().default(1000),
+    delayPerFloorMs: z.number().positive().default(2000),
+    doorTransitionTimeMs: z.number().positive().default(1000),
     floorTravelTimeMs: z.number().positive().default(500),
   })
 

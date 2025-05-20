@@ -171,11 +171,11 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
             }
           }
         }
-
         updatedStatuses[key] = floorHasActiveRequest && minEtaMs !== null ? 
           {
             requestStatus: RequestStatus.WAITING_FOR_PICKUP,
-            etaSeconds: Math.max(0, Math.ceil(minEtaMs / 1000)),
+            // etaSeconds: Math.max(0, Math.ceil(minEtaMs / 1000)),
+            etaSeconds: minEtaMs,
             isElevatorServicing: false,
           } : { ...defaultStatus };
       }

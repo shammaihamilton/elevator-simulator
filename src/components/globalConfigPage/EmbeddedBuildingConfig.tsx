@@ -1,10 +1,10 @@
 // src/components/globalConfigPage/EmbeddedBuildingConfig.tsx
 import React, { useEffect, useState, useCallback } from "react";
 import { buildingFieldSchema } from "@/config/buildingFieldSchema";
-// import FormSection from "../common/FormSection";
 import NumberField from "../common/NumberField";
-import styles from "./EmbeddedBuildingConfig.module.scss"; // You'll need to create this SCSS file
-import { BuildingFormData } from "../buildingConfigDialog/BuildingConfigDialog"; // Assuming type is exported or move to shared
+import styles from "./EmbeddedBuildingConfig.module.scss"; 
+import { BuildingFormData } from "../buildingConfigDialog/BuildingConfigDialog"; 
+import CustomSettingsBadge from "../common/CustomSettingsBadge";
 
 interface EmbeddedBuildingConfigProps {
   buildingIndex: number;
@@ -50,7 +50,7 @@ const EmbeddedBuildingConfig: React.FC<EmbeddedBuildingConfigProps> = ({
           Building {buildingIndex + 1} Configuration
         </h3>
         {isCustomized && (
-          <span className={styles.customBadge}>(Customized)</span>
+            <CustomSettingsBadge buildingIndex={buildingIndex} style={styles.customBadge} />
         )}
         <button
           type="button"

@@ -19,13 +19,11 @@ const ElevatorVisual: React.FC<Props> = ({
   layoutRef,
   slotRef,
 }) => {
-  // Initialize elevator to start at Floor 0 position
   const [y, setY] = useState<number | null>(null);
   const [doorState, setDoor] = useState(elevatorFSM.doorState);
   const [playDing, setDing] = useState(false);
   const prevFloorRef = useRef(elevatorFSM.currentFloor);
 
-  // compute y before paint
   useLayoutEffect(() => {
     if (!slotRef) return;
     const floorEl = floorRefs[elevatorFSM.currentFloor];
@@ -43,15 +41,15 @@ const ElevatorVisual: React.FC<Props> = ({
     setY(Math.max(0, relativeY));
     
     // Debug logging to see what's happening
-    console.log(`Elevator ${elevatorFSM.id}: Floor ${elevatorFSM.currentFloor}`, {
-      floorTop: floorRect.top,
-      slotTop: slotRect.top,
-      relativeY,
-      finalY: Math.max(0, relativeY),
-      floorHeight: FLOOR_H,
-      cabinHeight: CABIN_H,
-      offset
-    });
+    // console.log(`Elevator ${elevatorFSM.id}: Floor ${elevatorFSM.currentFloor}`, {
+    //   floorTop: floorRect.top,
+    //   slotTop: slotRect.top,
+    //   relativeY,
+    //   finalY: Math.max(0, relativeY),
+    //   floorHeight: FLOOR_H,
+    //   cabinHeight: CABIN_H,
+    //   offset
+    // });
   }, [elevatorFSM.currentFloor, floorRefs, slotRef, layoutRef, elevatorFSM.id]);
 
   // sync doors + ding
