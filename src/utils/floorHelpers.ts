@@ -1,14 +1,5 @@
 
 
-// // export const getDomBasedYForFloor = (
-// //   floor: number,
-// //   floorRefs: Record<number, HTMLDivElement | null>
-// // ): number | null => {
-// //   const floorElement  = floorRefs[floor];
-// //   if (!floorElement ) return null;
-// //   const top = floorElement.getBoundingClientRect().top;
-// //   return top - window.innerHeight;
-// // };
 
 
 
@@ -37,13 +28,6 @@ export const getDomBasedYForFloor = (
   const elevatorHeight = 70; // Match the elevator height in the component
   const posY = rect.top - parentRect.top + (rect.height / 2) - (elevatorHeight / 2);
   
-  // console.log(`Floor ${floor} position calculation:`, {
-  //   floorTop: rect.top,
-  //   parentTop: parentRect.top,
-  //   floorHeight: rect.height,
-  //   elevatorHeight,
-  //   resultY: posY
-  // });
   
   return posY;
 };

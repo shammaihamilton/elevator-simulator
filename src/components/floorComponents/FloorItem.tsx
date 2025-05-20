@@ -1,7 +1,7 @@
 // src/components/FloorItem.tsx (or similar path)
 import React, { useCallback } from 'react';
 import { useSimulationStore } from '@/store/simulationStore';
-import Floor from '@/components/Floor';
+import Floor from '@/components/floorComponents/Floor';
 interface FloorItemProps {
   buildingIndex: number;
   floorNumber: number;

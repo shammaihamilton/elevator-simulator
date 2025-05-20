@@ -7,8 +7,8 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 
 
-import BuildingContainer from './components/BuildingContainer';
-import GlobalConfigPage from './components/GlobalConfigPage';
+import BuildingContainer from './components/buildingsComponents/BuildingContainer';
+import GlobalConfigPage from './components/globalConfigPage/GlobalConfigPage';
 
 
 

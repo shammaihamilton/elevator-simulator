@@ -1,0 +1,74 @@
+
+
+.globalConfig {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-family: "Roboto", sans-serif;
+  color: #333;
+}
+
+.header {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+/* Simulation spans both columns, with no extra bottom gutter */
+.simulationSection {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+
+  /* two inputs side-by-side inside the Simulation panel */
+  .content {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+/*
+  Button container spans full width,
+  then justify-self: start | center | end
+*/
+.actions {
+  grid-column: 1 / -1;
+  justify-self: start;   /* change to center or end as you prefer */
+  margin-top: 1rem;
+}
+
+.submit {
+  background: linear-gradient(to bottom, #e0e0e0, #cfcfcf);
+  border: 1px solid #999;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: linear-gradient(to bottom, #d0d0d0, #bfbfbf);
+  }
+}
+.perBuildingSection {
+  grid-column: 1 / -1; // Span all columns if form is a grid
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #e0e0e0; // Separator
+}
+
+.subHeader {
+  font-size: 1.5rem; // Larger than FormSection title
+  margin-bottom: 1.5rem;
+}
+
+

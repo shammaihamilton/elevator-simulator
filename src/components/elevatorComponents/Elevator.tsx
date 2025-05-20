@@ -1,11 +1,11 @@
 
 import React, { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import elvImg from "../assets/elv.png"; // Assuming this path is correct relative to src
+import elvImg from "@/assets/elv.png"; 
 import { ElevatorDoor } from "./ElevatorDoor";
-import { ElevatorDoorState } from "../types/enums";
+import { ElevatorDoorState } from "@/types/enums";
 import { IElevatorFSM } from "@/interfaces";
-import dingSound from "../assets/ding.mp3"; // Assuming this path is correct
+import dingSound from "@/assets/ding.mp3"; 
 
 interface ElevatorProps {
   y: number;
@@ -52,47 +52,39 @@ export const Elevator: React.FC<ElevatorProps> = ({
   return (
     <>
       <motion.div
-        initial={false} // Avoid initial animation from 0,0 if y is already set
+        initial={false} 
         animate={{ y: y }}
         transition={{
           duration: animationDuration > 0 ? animationDuration : 0.1, // Ensure duration is positive
           ease: "linear",
-          // onComplete: () => { // onComplete can be useful for FSM updates if needed
-          //   console.log(
-          //     `Elevator ${elevatorFSM.id} completed animation to Y: ${y}`
-          //   );
-          // },
+     
         }}
         style={{
-          // margin: "20px", // Margin might be better on the parent positioning div
           position: "absolute",
-          left: "0px", // Positioned by parent
+          left: "0px",
           width: "70px",
           height: "70px",
-          // backgroundColor: "#333", // Image will cover this
           display: "flex",
-          // justifyContent: "space-between", // Not needed with current layout
           border: "2px solid #555",
           alignItems: "center",
           boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)",
           borderRadius: "5px",
-          overflow: "hidden", // Important for door animations
-          flexDirection: "column", // For internal layout if any
-          zIndex: 10, // Ensure elevator is above floors if overlapping
+          overflow: "hidden", 
+          flexDirection: "column",
+          zIndex: 10, 
         }}
       >
         {/* Cabin Visuals */}
         <div
           className="elevator-cabin-visuals"
           style={{
-            width: "100%", // Take full width of motion.div
-            height: "100%", // Take full height of motion.div
-            // backgroundColor: "white", // Covered by image
+            width: "100%", 
+            height: "100%", 
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            position: "relative", // For absolute positioning of children like display
-            overflow: "hidden", // Ensure image fits
+            position: "relative", 
+            overflow: "hidden", 
           }}
         >
           <img
@@ -102,7 +94,7 @@ export const Elevator: React.FC<ElevatorProps> = ({
               position: "absolute",
               width: "100%",
               height: "100%",
-              objectFit: "cover", // Ensure image covers the area
+              objectFit: "cover", 
             }}
           />
 
@@ -110,23 +102,21 @@ export const Elevator: React.FC<ElevatorProps> = ({
           <div
             style={{
               position: "absolute",
-              top: "2px", // Adjusted for better visibility
+              top: "2px", 
               left: "50%",
-              transform: "translateX(-50%)", // Center the display
+              transform: "translateX(-50%)", 
               padding: "1px 4px",
-              fontSize: "14px", // Slightly smaller for better fit
+              fontSize: "14px", 
               fontWeight: "bold",
               color: "white",
-              backgroundColor: "rgba(0,0,0,0.6)", // Background for readability
-              zIndex: 15, // Above image, below doors if they were to overlap text
+              backgroundColor: "rgba(0,0,0,0.6)", 
+              zIndex: 15, 
               borderRadius: "3px",
-              // width: "25px", // Let content define width
-              // height: "25px", // Let content define height
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               textAlign: "center",
-              minWidth: "20px", // Ensure it's visible even for single digit
+              minWidth: "20px",
             }}
           >
             {elevatorFSM.currentFloor}
@@ -141,11 +131,11 @@ export const Elevator: React.FC<ElevatorProps> = ({
 
       </motion.div>
       <audio
-        ref={audioRef} // Corrected ref assignment
+        ref={audioRef} 
         src={dingSound}
         preload="auto"
         loop={false}
-        style={{ display: "none" }} // Keep hidden
+        style={{ display: "none" }} 
       />
     </>
   );

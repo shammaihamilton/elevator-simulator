@@ -37,7 +37,7 @@ const GlobalConfigPage: React.FC = () => {
               <input
                 type="number"
                 className="w-full border rounded p-2"
-                value={formData.buildings.buildings}
+                value={formData.buildings.numberOfBuildings}
                 onChange={(e) => handleChange("buildings", "buildings", e.target.value)}
                 min={1}
               />

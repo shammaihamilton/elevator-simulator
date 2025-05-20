@@ -3,7 +3,6 @@ import { ElevatorState } from '../types/enums';
 import { PassengerRequest } from '../interfaces';
 import { ElevatorTimingSettings, IElevatorTimingManager } from '../interfaces';
 
-/* ───────── utility types ───────── */
 
 export interface ETACalcParams {
   currentFloor: number;
@@ -24,8 +23,8 @@ export function fullStopMs(t: ElevatorTimingSettings) {
   return t.doorTransitionTimeMs * 2 +
          Math.max(t.doorOpenTimeMs, t.delayPerFloorMs);
 }
-const travelMs = (f1: number, f2: number, t: ElevatorTimingSettings) =>
-  Math.abs(f1 - f2) * t.floorTravelTimeMs;
+const travelMs = (floor1: number, floor2: number, t: ElevatorTimingSettings) =>
+  Math.abs(floor1 - floor2) * t.floorTravelTimeMs;
 
 
 const segMs = (s: Segment, t: ElevatorTimingSettings) =>

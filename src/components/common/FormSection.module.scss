@@ -1,0 +1,23 @@
+
+.section {
+  display: flex;
+  flex-direction: column;  /* title on top */
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  color: #007bff;
+  margin-bottom: 1rem;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 1rem;
+}
+
+/* if you need a helper for spanning two cols, it can live here */
+.spanTwo {
+  grid-column: 1 / -1;
+}

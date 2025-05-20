@@ -19,7 +19,6 @@ export default function HomeContent() {
             color: 'white',
             textDecoration: 'none',
             borderRadius: '5px',
-            // marginRight: '1rem' // Replaced by gap
             transition: 'background-color 0.2s ease-in-out',
           }}
           onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#0056b3')}

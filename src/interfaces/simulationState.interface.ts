@@ -23,7 +23,4 @@ export interface SimulationState {
     buildingIndex: number,
     settings: BuildingSpecificSettings | null
   ) => void;
-
 }
-
-

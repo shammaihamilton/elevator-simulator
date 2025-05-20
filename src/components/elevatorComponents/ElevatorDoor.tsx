@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ElevatorDoorState } from '../types/enums';
+import { ElevatorDoorState } from '../../types/enums';
 
 interface ElevatorDoorProps {
   doorState: ElevatorDoorState;

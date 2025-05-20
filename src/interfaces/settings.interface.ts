@@ -1,29 +1,50 @@
+import { AppSettings as ZodAppSettings } from '@/config/settingsSchema';
+
+export type AppSettings = ZodAppSettings;
+
+// export interface BuildingSettings {
+//   numberOfBuildings: number;
+//   floorsPerBuilding: number;
+//   elevatorsPerBuilding: number;
+//   initialElevatorFloor: number;
+// }
+
+// export interface ElevatorTimingSettings {
+//   doorOpenTimeMs: number;
+//   delayPerFloorMs: number;
+//   doorTransitionTimeMs: number;
+//   floorTravelTimeMs: number;
+// }
+
+// export interface SimulationSettings {
+//   simulationTickMs: number;
+//   simulationSpeedFactor: number;
+//   currentTime?: number;
+// }
 
 
+// export interface BuildingSpecificSettings {
+//   floorsPerBuilding?: number;
+//   elevatorsPerBuilding?: number;
+//   initialElevatorFloor?: number;
+//   doorOpenTimeMs?: number;
+//   doorTransitionTimeMs?: number;
+  // floorTravelTimeMs?: number;
+  // delayPerFloorMs?: number;
+// }
 
+// export interface AppSettings {
+//   buildings: BuildingSettings;
+//   timing: ElevatorTimingSettings;
+//   simulation: SimulationSettings;
+// }
 
+export type ElevatorTimingSettings = ZodAppSettings['timing'];
+export type BuildingSettings = ZodAppSettings['buildings'];
+export type SimulationSettings = ZodAppSettings['simulation'];
 
-export interface BuildingSettings {
-    buildings: number;
-    floorsPerBuilding: number;
-    elevatorsPerBuilding: number;
-    initialElevatorFloor: number;
-}
+// You might still need BuildingSpecificSettings if it's not fully covered by Zod or used differently
 
-export interface ElevatorTimingSettings {
-    doorOpenTimeMs: number;
-    delayPerFloorMs: number;
-    doorTransitionTimeMs: number;
-    floorTravelTimeMs: number;
-}
-
-export interface SimulationSettings {
-  simulationTickMs: number;
-  simulationSpeedFactor: number;
-  currentTime?: number;
-
-
-}
 export interface BuildingSpecificSettings {
   floorsPerBuilding?: number;
   elevatorsPerBuilding?: number;
@@ -34,21 +55,6 @@ export interface BuildingSpecificSettings {
   delayPerFloorMs?: number;
 }
 
-export interface AppSettings {
-  buildings: BuildingSettings;
-  timing: ElevatorTimingSettings;
-  simulation: SimulationSettings;
-}
-
-export interface BuildingSpecificSettings {
-  floorsPerBuilding?: number;
-  elevatorsPerBuilding?: number;
-  initialElevatorFloor?: number;
-  doorOpenTimeMs?: number;
-  delayPerFloorMs?: number;
-  doorTransitionTimeMs?: number;
-  floorTravelTimeMs?: number;
-}
 export interface EffectiveBuildingSettings {
   floorsPerBuilding: number;
   elevatorsPerBuilding: number;
