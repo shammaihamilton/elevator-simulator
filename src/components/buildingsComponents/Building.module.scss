@@ -6,11 +6,6 @@
   min-width: 300px; // Ensure minimum width
   overflow-x: auto;
     
-
-  @media (max-width: 640px) {
-    flex: 1 1 100%;
-    min-width: 250px;
-  }
 }
 
 .header {
