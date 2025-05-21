@@ -101,13 +101,13 @@ graph TD
 ### Activity Diagram – Elevator Request Handling
 ```mermaid
 flowchart TD
-  Start([Start]) --> ButtonPress[User presses Floor Button]
+  Start --> ButtonPress[User presses Floor Button]
   ButtonPress --> requestElevator[Store: requestElevator()]
   requestElevator --> handleRequest[Manager: handleRequest()]
   handleRequest --> bestElevator[Select best ElevatorFSM]
   bestElevator --> addStop[ElevatorFSM: addStop()]
   addStop --> UpdateStatus[updateFloorStatuses()]
-  UpdateStatus --> End([End])
+  UpdateStatus --> End
 ```
 </details>
 
