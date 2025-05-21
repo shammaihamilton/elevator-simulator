@@ -9,7 +9,7 @@ A TypeScript + React-based elevator system simulation with modular architecture,
 - **React + TypeScript** – UI
 - **Zustand** – State Management
 - **Object-Oriented Design** – `ElevatorFSM`, `ElevatorManager`, Factories
-- **Mermaid.js** – Diagrams
+
 
 ---
 
