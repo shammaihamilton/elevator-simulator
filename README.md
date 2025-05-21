@@ -34,14 +34,14 @@ We implemented classic software engineering patterns to ensure scalability and c
 ### Design Patterns Overview
 ```mermaid
 graph TD
-State[State Pattern - ElevatorFSM controls state] --> FSM[ElevatorFSM]
-Strategy[Strategy Pattern - Dispatch algorithm] --> Manager[ElevatorManager]
-Factory[Factory Pattern - Factories for managers and requests] --> Factories[Factories]
-Observer[Observer Pattern - Zustand and React] --> Zustand[Zustand Store]
-Composition[Component Composition - React UI structure] --> React[React Components]
-Command[Command Pattern - requestElevator()] --> Manager
+State["State Pattern - ElevatorFSM controls state"] --> FSM["ElevatorFSM"]
+Strategy["Strategy Pattern - Dispatch algorithm"] --> Manager["ElevatorManager"]
+Factory["Factory Pattern - Factories for managers and requests"] --> Factories["Factories"]
+Observer["Observer Pattern - Zustand and React"] --> Zustand["Zustand Store"]
+Composition["Component Composition - React UI structure"] --> React["React Components"]
+Command["Command Pattern - requestElevator()"] --> Manager
 Command --> FSM
-MVC[MVC Pattern - Model, View, Controller] --> FSM
+MVC["MVC Pattern - Model, View, Controller"] --> FSM
 MVC --> React
 MVC --> Zustand
 ```
@@ -50,40 +50,40 @@ MVC --> Zustand
 ```mermaid
 stateDiagram-v2
   [*] --> IDLE
-  IDLE --> MOVING_UP : if currentFloor < target
-  IDLE --> MOVING_DOWN : if currentFloor > target
-  MOVING_UP --> STOPPED_AT_FLOOR : if reached target
-  MOVING_DOWN --> STOPPED_AT_FLOOR : if reached target
-  STOPPED_AT_FLOOR --> IDLE : after door close and activity
+  IDLE --> MOVING_UP : currentFloor < target
+  IDLE --> MOVING_DOWN : currentFloor > target
+  MOVING_UP --> STOPPED_AT_FLOOR : reached target
+  MOVING_DOWN --> STOPPED_AT_FLOOR : reached target
+  STOPPED_AT_FLOOR --> IDLE : door close and activity
 ```
 
 ### Tick Flow – Simulation Clock Cycle
 ```mermaid
 graph TD
-  Tick[tick()] --> UpdateFSM[Update Each ElevatorFSM]
-  UpdateFSM --> TimeForward[Advance Sim Time]
-  TimeForward --> UpdateFloorStatuses[updateFloorStatuses()]
+  Tick["tick()"] --> UpdateFSM["Update Each ElevatorFSM"]
+  UpdateFSM --> TimeForward["Advance Sim Time"]
+  TimeForward --> UpdateFloorStatuses["updateFloorStatuses()"]
 ```
 
 ### Component Hierarchy
 ```mermaid
 graph TD
-  App[BuildingContainer]
-  App --> Building[Building]
-  Building --> FloorItem[FloorItem]
-  FloorItem --> Floor[Floor]
-  Building --> ElevatorVisual[ElevatorVisual]
-  ElevatorVisual --> Elevator[Elevator]
-  Elevator --> ElevatorDoor[ElevatorDoor]
+  App["BuildingContainer"]
+  App --> Building["Building"]
+  Building --> FloorItem["FloorItem"]
+  FloorItem --> Floor["Floor"]
+  Building --> ElevatorVisual["ElevatorVisual"]
+  ElevatorVisual --> Elevator["Elevator"]
+  Elevator --> ElevatorDoor["ElevatorDoor"]
 ```
 
 ### Zustand + FSM Data Flow
 ```mermaid
 graph TD
-  Floor --> Store[SimulationStore]
-  Store --> Manager[ElevatorManager]
-  Manager --> FSM[ElevatorFSM]
-  FSM --> Timing[ElevatorTimingManager]
+  Floor --> Store["SimulationStore"]
+  Store --> Manager["ElevatorManager"]
+  Manager --> FSM["ElevatorFSM"]
+  FSM --> Timing["ElevatorTimingManager"]
   ElevatorVisual --> FSM
   FSM --> Store
 ```
@@ -91,22 +91,22 @@ graph TD
 ### RequestElevator Flow
 ```mermaid
 graph TD
-  UserClick[User clicks Call Button] --> CallFunc[Floor.onRequest()]
-  CallFunc --> StoreFunc[SimulationStore.requestElevator()]
-  StoreFunc --> ManagerDispatch[ElevatorManager.handleRequest()]
-  ManagerDispatch --> AssignFSM[ElevatorFSM.addStop()]
-  AssignFSM --> UpdateFloorStatus[updateFloorStatuses()]
+  UserClick["User clicks Call Button"] --> CallFunc["Floor.onRequest()"]
+  CallFunc --> StoreFunc["SimulationStore.requestElevator()"]
+  StoreFunc --> ManagerDispatch["ElevatorManager.handleRequest()"]
+  ManagerDispatch --> AssignFSM["ElevatorFSM.addStop()"]
+  AssignFSM --> UpdateFloorStatus["updateFloorStatuses()"]
 ```
 
 ### Activity Diagram – Elevator Request Handling
 ```mermaid
 flowchart TD
-  Start --> ButtonPress[User presses Floor Button]
-  ButtonPress --> requestElevator[Store: requestElevator()]
-  requestElevator --> handleRequest[Manager: handleRequest()]
-  handleRequest --> bestElevator[Select best ElevatorFSM]
-  bestElevator --> addStop[ElevatorFSM: addStop()]
-  addStop --> UpdateStatus[updateFloorStatuses()]
+  Start --> ButtonPress["User presses Floor Button"]
+  ButtonPress --> requestElevator["Store - requestElevator()"]
+  requestElevator --> handleRequest["Manager - handleRequest()"]
+  handleRequest --> bestElevator["Select best ElevatorFSM"]
+  bestElevator --> addStop["ElevatorFSM - addStop()"]
+  addStop --> UpdateStatus["updateFloorStatuses()"]
   UpdateStatus --> End
 ```
 </details>
