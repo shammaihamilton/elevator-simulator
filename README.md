@@ -145,10 +145,8 @@ npm run dev
 
 ## Author
 
-Built by [Your Name], 2025.
+Built by shammai hamilton, 2025.
 
 ---
 
 ## License
-
-MIT
