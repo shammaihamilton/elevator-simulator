@@ -59,7 +59,7 @@ export const Elevator: React.FC<ElevatorProps> = ({
         }}
         style={{
           position: "absolute",
-          left: "0px",
+          left: "4px",
           width: "70px",
           height: "70px",
           display: "flex",

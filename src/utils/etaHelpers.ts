@@ -64,7 +64,7 @@ export function calcETA(p: ETACalcParams): number {
     }
 
     // B) drop‑off
-    proj.time += segMs({ from: proj.floor, to: req.destinationFloor, stop: true }, timing);
+    // proj.time += segMs({ from: proj.floor, to: req.destinationFloor, stop: true }, timing);
     proj.floor  = req.destinationFloor;
 
     if (req.destinationFloor === targetFloor)
