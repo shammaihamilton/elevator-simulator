@@ -23,14 +23,14 @@ export const BuildingsSettingsSchema = z.object({
   )
 
   export const TimingSettingsSchema = z.object({
-    doorOpenTimeMs: z.number().positive().default(1000),
+    doorOpenTimeMs: z.number().positive().default(500),
     delayPerFloorMs: z.number().positive().default(2000),
     doorTransitionTimeMs: z.number().positive().default(1000),
     floorTravelTimeMs: z.number().positive().default(500),
   })
 
   export const SimulationSettingsSchema = z.object({
-    simulationTickMs: z.number().positive().default(100),
+    simulationTickMs: z.number().positive().default(500),
     simulationSpeedFactor: z.number().positive().default(1),
     currentTime: z.number().nonnegative().default(0),
   })

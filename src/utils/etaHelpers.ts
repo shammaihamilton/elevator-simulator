@@ -19,9 +19,10 @@ interface Segment { from: number; to: number; stop: boolean; }
 
 /* ───────── cached math helpers ───────── */
 
-export function fullStopMs(t: ElevatorTimingSettings) {
-  return t.doorTransitionTimeMs * 2 +
-         Math.max(t.doorOpenTimeMs, t.delayPerFloorMs);
+export function fullStopMs(elevatorTiming: ElevatorTimingSettings) {
+  const { doorOpenTimeMs, delayPerFloorMs } = elevatorTiming
+  return Math.max(doorOpenTimeMs, delayPerFloorMs);
+         
 }
 const travelMs = (floor1: number, floor2: number, t: ElevatorTimingSettings) =>
   Math.abs(floor1 - floor2) * t.floorTravelTimeMs;

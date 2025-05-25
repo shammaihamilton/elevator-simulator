@@ -8,13 +8,13 @@ export const defaultAppSettings: AppSettings = {
     initialElevatorFloor: 0,
   },
   timing: {
-    doorOpenTimeMs: 1000,
+    doorOpenTimeMs: 500,
     delayPerFloorMs: 1000,
     doorTransitionTimeMs: 500,
     floorTravelTimeMs: 500,
   },
   simulation: {
-    simulationTickMs: 100,
+    simulationTickMs: 500,
     simulationSpeedFactor: 1,
     currentTime: 0,
   },
