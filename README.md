@@ -1,123 +1,152 @@
-# 🚀 Elevator Simulator
+# Elevator Simulation System
 
-Elevator Simulator is a modular and scalable simulation system built with **React**, **TypeScript**, and **Vite**.  
-It demonstrates Object-Oriented Programming principles and applies the **Factory Design Pattern** to manage elevator behavior and configuration.
-
-> ⚙️ Designed to support multiple elevators and buildings with customizable setups.
+A TypeScript + React-based elevator system simulation with modular architecture, real-time animations, and intelligent elevator dispatching.
 
 ---
 
-## 📸 Preview
+## Tech Stack
 
-![Elevator Simulator Demo](./assets/demo.gif) <!-- תוכל לשים כאן קישור ל-GIF שמדגים את המערכת -->
-
-[🔗 Live Demo on Netlify](https://your-netlify-link.netlify.app)
-
----
-
-## 🧠 Features
-
-- 🚪 Multiple elevators with individual logic and request queues
-- ⏱️ ETA calculation and smart request assignment
-- 🏢 Multi-building support (planned)
-- 🧱 Factory design pattern for flexible elevator creation
-- 🎨 Built with React + TypeScript + Vite for blazing fast performance
+- **React + TypeScript** – UI
+- **Zustand** – State Management
+- **Object-Oriented Design** – `ElevatorFSM`, `ElevatorManager`, Factories
+- **Mermaid.js** – Diagrams
 
 ---
 
-## 🏗️ Tech Stack
+## Design Principles
 
-| Tech              | Purpose                                |
-|-------------------|----------------------------------------|
-| React             | UI framework                           |
-| TypeScript        | Type-safe development                  |
-| Vite              | Fast build tool                        |
-| OOP & Design Patterns | Scalable architecture               |
-| CSS Modules / Tailwind (if used) | Styling                 |
+We implemented classic software engineering patterns to ensure scalability and clarity:
+
+- **State Pattern** – Elevator state machine (`ElevatorFSM`)
+- **Strategy Pattern** – Optimal elevator dispatch
+- **Factory Pattern** – Manager and request creation
+- **Observer Pattern** – React & Zustand integration
+- **Command Pattern** – `requestElevator()` actions
+- **MVC** – Modular separation between logic and UI
 
 ---
 
-## 🚀 Getting Started
+## System Architecture
 
+<details>
+<summary>Click to expand diagrams</summary>
+
+### Design Patterns Overview
+```mermaid
+graph TD
+State["State Pattern - ElevatorFSM controls state"] --> FSM["ElevatorFSM"]
+Strategy["Strategy Pattern - Dispatch algorithm"] --> Manager["ElevatorManager"]
+Factory["Factory Pattern - Factories for managers and requests"] --> Factories["Factories"]
+Observer["Observer Pattern - Zustand and React"] --> Zustand["Zustand Store"]
+Composition["Component Composition - React UI structure"] --> React["React Components"]
+Command["Command Pattern - requestElevator()"] --> Manager
+Command --> FSM
+MVC["MVC Pattern - Model, View, Controller"] --> FSM
+MVC --> React
+MVC --> Zustand
+```
+
+### ElevatorFSM – State Transitions
+```mermaid
+stateDiagram-v2
+  [*] --> IDLE
+  IDLE --> MOVING_UP : currentFloor < target
+  IDLE --> MOVING_DOWN : currentFloor > target
+  MOVING_UP --> STOPPED_AT_FLOOR : reached target
+  MOVING_DOWN --> STOPPED_AT_FLOOR : reached target
+  STOPPED_AT_FLOOR --> IDLE : door close and activity
+```
+
+### Tick Flow – Simulation Clock Cycle
+```mermaid
+graph TD
+  Tick["tick()"] --> UpdateFSM["Update Each ElevatorFSM"]
+  UpdateFSM --> TimeForward["Advance Sim Time"]
+  TimeForward --> UpdateFloorStatuses["updateFloorStatuses()"]
+```
+
+### Component Hierarchy
+```mermaid
+graph TD
+  App["BuildingContainer"]
+  App --> Building["Building"]
+  Building --> FloorItem["FloorItem"]
+  FloorItem --> Floor["Floor"]
+  Building --> ElevatorVisual["ElevatorVisual"]
+  ElevatorVisual --> Elevator["Elevator"]
+  Elevator --> ElevatorDoor["ElevatorDoor"]
+```
+
+### Zustand + FSM Data Flow
+```mermaid
+graph TD
+  Floor --> Store["SimulationStore"]
+  Store --> Manager["ElevatorManager"]
+  Manager --> FSM["ElevatorFSM"]
+  FSM --> Timing["ElevatorTimingManager"]
+  ElevatorVisual --> FSM
+  FSM --> Store
+```
+
+### RequestElevator Flow
+```mermaid
+graph TD
+  UserClick["User clicks Call Button"] --> CallFunc["Floor.onRequest()"]
+  CallFunc --> StoreFunc["SimulationStore.requestElevator()"]
+  StoreFunc --> ManagerDispatch["ElevatorManager.handleRequest()"]
+  ManagerDispatch --> AssignFSM["ElevatorFSM.addStop()"]
+  AssignFSM --> UpdateFloorStatus["updateFloorStatuses()"]
+```
+
+### Activity Diagram – Elevator Request Handling
+```mermaid
+flowchart TD
+  Start --> ButtonPress["User presses Floor Button"]
+  ButtonPress --> requestElevator["Store - requestElevator()"]
+  requestElevator --> handleRequest["Manager - handleRequest()"]
+  handleRequest --> bestElevator["Select best ElevatorFSM"]
+  bestElevator --> addStop["ElevatorFSM - addStop()"]
+  addStop --> UpdateStatus["updateFloorStatuses()"]
+  UpdateStatus --> End
+```
+</details>
+
+---
+
+## Features
+
+- Multi-building simulation
+- Elevator queueing with ETA calculation
+- Realtime elevator animation
+- Configurable timing settings per elevator
+- Visual indication of requests and states
+
+---
+
+## Getting Started
+
+### 1. Clone the repo
 ```bash
-# 1. Clone the project
-git clone https://github.com/shammaihamilton/elevator-simulator.git
+git clone https://github.com/your-username/elevator-simulator.git
 cd elevator-simulator
+```
 
-# 2. Install dependencies
+### 2. Install dependencies
+```bash
 npm install
+```
 
-# 3. Run locally
+### 3. Run the development server
+```bash
 npm run dev
 ```
 
 ---
 
-## 📦 Build for Production
+## Author
 
-```bash
-npm run build
-```
-
-The final static site will be output to the `dist/` directory. Ready to deploy on **Netlify**, **Vercel**, or any static hosting service.
+Built by shammai hamilton, 2025.
 
 ---
 
-## 🧪 Tests (optional)
-
-If you use `vitest` or `jest`, include:
-
-```bash
-npm run test
-```
-
----
-
-## 🧱 Folder Structure
-
-```
-src/
-├── components/          # Reusable React components
-├── elevators/           # Elevator classes and logic
-├── managers/            # ElevatorManager and factory logic
-├── types/               # Shared TypeScript types and enums
-├── App.tsx              # Root component
-├── main.tsx             # Entry point
-```
-
----
-
-## 🧠 Design Patterns
-
-The system implements:
-- **Factory Pattern**: for dynamic creation of elevator instances.
-- **OOP Principles**: encapsulation, inheritance, and separation of concerns.
-
----
-
-## 📌 Roadmap
-
-- [x] Handle multiple elevators
-- [x] Direction-aware request routing
-- [ ] Support for multiple buildings
-- [ ] Floor request visualization
-- [ ] Mobile UI support
-
----
-
-## 🤝 Contributing
-
-Pull requests are welcome!  
-Feel free to open issues or suggest features.
-
----
-
-## 📄 License
-
-[MIT License](./LICENSE)
-
----
-
-## 👤 Author
-
-Built with ❤️ by [@shammaihamilton](https://github.com/shammaihamilton)
+## License
