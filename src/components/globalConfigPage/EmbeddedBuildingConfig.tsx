@@ -1,10 +1,12 @@
-// src/components/globalConfigPage/EmbeddedBuildingConfig.tsx
+
 import React, { useEffect, useState, useCallback } from "react";
 import { buildingFieldSchema } from "@/config/buildingFieldSchema";
 import NumberField from "../common/NumberField";
-import styles from "./EmbeddedBuildingConfig.module.scss"; 
-import { BuildingFormData } from "../buildingConfigDialog/BuildingConfigDialog"; 
+import SelectField from "../common/SelectField";
+import styles from "./EmbeddedBuildingConfig.module.scss";
+import { BuildingFormData } from "../buildingConfigDialog/BuildingConfigDialog";
 import CustomSettingsBadge from "../common/CustomSettingsBadge";
+import { DispatchStrategy } from "@/types/enums/dispatchStrategy.enums";
 
 interface EmbeddedBuildingConfigProps {
   buildingIndex: number;
@@ -25,7 +27,9 @@ const EmbeddedBuildingConfig: React.FC<EmbeddedBuildingConfigProps> = ({
     return currentOverride ? { ...currentOverride } : { ...globalDefaults };
   }, [currentOverride, globalDefaults]);
 
-  const [formData, setFormData] = useState<BuildingFormData>(getInitialFormData());
+  const [formData, setFormData] = useState<BuildingFormData>(
+    getInitialFormData()
+  );
 
   useEffect(() => {
     setFormData(getInitialFormData());
@@ -37,11 +41,28 @@ const EmbeddedBuildingConfig: React.FC<EmbeddedBuildingConfigProps> = ({
     onOverrideChange(buildingIndex, newFormData);
   };
 
+  const handleDispatchStrategyChange = (value: string) => {
+    const newFormData = {
+      ...formData,
+      dispatchStrategy: value as DispatchStrategy,
+    };
+    setFormData(newFormData);
+    onOverrideChange(buildingIndex, newFormData);
+  };
+
   const handleResetClick = () => {
     onResetToGlobal(buildingIndex);
   };
 
   const isCustomized = currentOverride !== null;
+
+  // Get dispatch strategy options
+  const dispatchStrategyOptions = Object.values(DispatchStrategy).map(
+    (strategy) => ({
+      value: strategy,
+      label: strategy,
+    })
+  );
 
   return (
     <div className={styles.embeddedConfigWrapper}>
@@ -50,7 +71,10 @@ const EmbeddedBuildingConfig: React.FC<EmbeddedBuildingConfigProps> = ({
           Building {buildingIndex + 1} Configuration
         </h3>
         {isCustomized && (
-            <CustomSettingsBadge buildingIndex={buildingIndex} style={styles.customBadge} />
+          <CustomSettingsBadge
+            buildingIndex={buildingIndex}
+            style={styles.customBadge}
+          />
         )}
         <button
           type="button"
@@ -71,16 +95,32 @@ const EmbeddedBuildingConfig: React.FC<EmbeddedBuildingConfigProps> = ({
                 : "Timing Parameters (ms)"}
             </h4>
             <div className={styles.fieldsGrid}>
-              {buildingFieldSchema[sectionKey].map((def) => (
-                <NumberField
-                  key={def.key}
-                  label={def.label}
-                  min={def.min}
-                  step={def.step}
-                  value={formData[def.key]}
-                  onChange={(val) => handleChange(def.key, val)}
+              {buildingFieldSchema[sectionKey].map((def) => {
+                // Check if the key exists in formData
+                const fieldValue = formData[def.key];
+                const numericValue =
+                  typeof fieldValue === "number" ? fieldValue : 0;
+
+                return (
+                  <NumberField
+                    key={def.key}
+                    label={def.label}
+                    min={def.min}
+                    step={def.step}
+                    value={numericValue}
+                    onChange={(val) => handleChange(def.key, val)}
+                  />
+                );
+              })}
+              {/* Add dispatch strategy field to building params section */}
+              {sectionKey === "buildingParams" && (
+                <SelectField
+                  label="Dispatch Strategy"
+                  value={formData.dispatchStrategy || ""}
+                  options={dispatchStrategyOptions}
+                  onChange={handleDispatchStrategyChange}
                 />
-              ))}
+              )}
             </div>
           </div>
         ))}

@@ -1,4 +1,5 @@
 import { AppSettings } from '@/interfaces';
+import { DispatchStrategy } from '@/types/enums';
 
 export const defaultAppSettings: AppSettings = {
   buildings: {
@@ -6,10 +7,11 @@ export const defaultAppSettings: AppSettings = {
     floorsPerBuilding: 7,
     elevatorsPerBuilding: 3,
     initialElevatorFloor: 0,
+    dispatchStrategy: DispatchStrategy.ETA_ONLY,
   },
   timing: {
     doorOpenTimeMs: 500,
-    delayPerFloorMs: 1000,
+    delayPerFloorMs: 1000, 
     doorTransitionTimeMs: 500,
     floorTravelTimeMs: 500,
   },

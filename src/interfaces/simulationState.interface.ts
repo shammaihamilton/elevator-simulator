@@ -1,12 +1,14 @@
-import { AppSettings, BuildingSpecificSettings } from "./settings.interface";
+import { AppSettings, EffectiveBuildingSettings } from "./settings.interface";
 import { IElevatorManager } from "./elevatorManager.interface";
+import { DispatchStrategy } from "@/types/enums";
 
 export interface SimulationState {
   // State properties
   managers: IElevatorManager[];
   settings: AppSettings;
   currentTime: number;
-  buildingSpecificSettings: Record<number, BuildingSpecificSettings | null>;
+  dispatchStrategy: DispatchStrategy;
+  buildingSpecificSettings: Record<number, EffectiveBuildingSettings | null>;
   isPaused: boolean; // Added: Actual pause state
   // Actions
   requestElevator: (
@@ -16,11 +18,12 @@ export interface SimulationState {
   ) => void;
   tick: () => void;
   reset: () => void;
+  setDispatchStrategy: (dispatchStrategy: DispatchStrategy) => void;
   pauseSimulation: () => void; // For global pause
   resumeSimulation: () => void; // For global resume
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   updateBuildingSettings: (
     buildingIndex: number,
-    settings: BuildingSpecificSettings | null
+    settings: EffectiveBuildingSettings | null
   ) => void;
 }

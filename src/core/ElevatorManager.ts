@@ -1,5 +1,5 @@
 // core/ElevatorManager.ts
-import { ElevatorState, DispatchMethod } from "@/types/enums";
+import { ElevatorState, DispatchStrategy } from "@/types/enums";
 import {
   IElevatorFSM,
   ElevatorStateObject,
@@ -13,7 +13,7 @@ export class ElevatorManager implements IElevatorManager {
   elevators: IElevatorFSM[];
   isPaused: boolean = false;
   config: SelectionConfig;
-  private mode: DispatchMethod;
+  private mode: DispatchStrategy;
 
   constructor(elevators: IElevatorFSM[], cfg?: Partial<SelectionConfig>) {
     if (!elevators.length)
@@ -26,7 +26,7 @@ export class ElevatorManager implements IElevatorManager {
       capacityFactorMs: 2000,
       ...cfg,
     };
-    this.mode = DispatchMethod.ETA_ONLY;
+    this.mode = DispatchStrategy.ETA_ONLY;
   }
 
   handleRequest(req: PassengerRequest, now: number): void {
@@ -39,15 +39,18 @@ export class ElevatorManager implements IElevatorManager {
     best.addStop(req);
   }
 
-  setDispatchMode(mode: DispatchMethod) {
+  setDispatchStrategy(mode: DispatchStrategy) {
     this.mode = mode;
+  }
+  getDispatchStrategy(): DispatchStrategy {
+    return this.mode;
   }
   private metric(
     car: IElevatorFSM,
     req: PassengerRequest,
     now: number
   ): number {
-    if (this.mode === DispatchMethod.ETA_ONLY) {
+    if (this.mode === DispatchStrategy.ETA_ONLY) {
       return car.calculateETA(req.sourceFloor, now);
     }
     return this.scoredMetric(car, req, now);

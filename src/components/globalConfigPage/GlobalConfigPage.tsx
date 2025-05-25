@@ -1,12 +1,15 @@
+
 import React, { useState, useEffect } from "react";
 import { useSimulationStore } from "@/store/simulationStore";
 import FormSection from "../common/FormSection";
 import NumberField from "../common/NumberField";
+import SelectField from "../common/SelectField"; // Add this import
 import styles from "./GlobalConfigPage.module.scss";
 import { useNavigate } from "react-router-dom";
 import EmbeddedBuildingConfig from "./EmbeddedBuildingConfig";
 import { BuildingFormData } from "../buildingConfigDialog/BuildingConfigDialog";
-import { SettingsSchema, AppSettings } from "@/config/settingsSchema"; // Use Zod-inferred AppSettings
+import { SettingsSchema, AppSettings } from "@/config/settingsSchema";
+import { DispatchStrategy } from "@/types/enums/dispatchStrategy.enums";
 
 const GlobalConfigPage: React.FC = () => {
   const [formErrors, setFormErrors] = useState<
@@ -23,20 +26,19 @@ const GlobalConfigPage: React.FC = () => {
     (s) => s.updateBuildingSettings
   );
 
-
   const [formData, setFormData] = useState<AppSettings>(storeSettings as AppSettings);
   const [localBuildingOverrides, setLocalBuildingOverrides] = useState<
     Record<number, BuildingFormData | null>
   >({});
 
   useEffect(() => {
-
     const initialOverrides: Record<number, BuildingFormData | null> = {};
     const numBuildings = storeSettings.buildings.numberOfBuildings;
 
     const globalDefaultsForOverrides: BuildingFormData = {
       floorsPerBuilding: storeSettings.buildings.floorsPerBuilding,
       elevatorsPerBuilding: storeSettings.buildings.elevatorsPerBuilding,
+      dispatchStrategy: storeSettings.buildings.dispatchStrategy,
       initialElevatorFloor: storeSettings.buildings.initialElevatorFloor,
       doorOpenTimeMs: storeSettings.timing.doorOpenTimeMs,
       doorTransitionTimeMs: storeSettings.timing.doorTransitionTimeMs,
@@ -70,7 +72,7 @@ const GlobalConfigPage: React.FC = () => {
       const currentSectionData = prevFormData[section];
       const newSectionData = {
         ...currentSectionData,
-        [field]: value, // Type checking will occur here
+        [field]: value,
       };
       const newFormData = {
         ...prevFormData,
@@ -81,19 +83,39 @@ const GlobalConfigPage: React.FC = () => {
     });
   };
 
-const handleSubmit = (e: React.FormEvent) => {
+  const handleDispatchStrategyChange = (value: string) => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      buildings: {
+        ...prevFormData.buildings,
+        dispatchStrategy: value as DispatchStrategy,
+      },
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormErrors({}); // Clear previous errors
+    setFormErrors({});
 
     const parseResult = SettingsSchema.safeParse(formData);
 
     if (parseResult.success) {
       const validatedSettings: AppSettings = parseResult.data;
-      updateSettings(validatedSettings); // Update store with Zod-validated and transformed settings
+      updateSettings(validatedSettings);
 
       const numBuildings = validatedSettings.buildings.numberOfBuildings;
       for (let i = 0; i < numBuildings; i++) {
-        updateBuildingSettings(i, localBuildingOverrides[i] || null);
+        const override = localBuildingOverrides[i];
+        if (override) {
+          // Ensure dispatchStrategy is not null before passing to store
+          const safeOverride = {
+            ...override,
+            dispatchStrategy: override.dispatchStrategy || validatedSettings.buildings.dispatchStrategy
+          };
+          updateBuildingSettings(i, safeOverride);
+        } else {
+          updateBuildingSettings(i, null);
+        }
       }
       Object.keys(storeBuildingSpecificSettings).forEach((keyStr) => {
         const index = parseInt(keyStr, 10);
@@ -103,12 +125,17 @@ const handleSubmit = (e: React.FormEvent) => {
       });
       navigate("/simulation");
     } else {
-
       const flattenedErrors = parseResult.error.flatten().fieldErrors;
       console.error("Global configuration errors:", flattenedErrors);
       setFormErrors(flattenedErrors as Record<string, string[] | undefined>);
     }
   };
+
+  // Get dispatch strategy options
+  const dispatchStrategyOptions = Object.values(DispatchStrategy).map(strategy => ({
+    value: strategy,
+    label: strategy
+  }));
 
   return (
     <div className={styles.globalConfig}>
@@ -144,6 +171,12 @@ const handleSubmit = (e: React.FormEvent) => {
             onChange={(v) =>
               handleChange("buildings", "initialElevatorFloor", v)
             }
+          />
+          <SelectField
+            label="Default Dispatch Strategy"
+            value={formData.buildings.dispatchStrategy}
+            options={dispatchStrategyOptions}
+            onChange={handleDispatchStrategyChange}
           />
         </FormSection>
 
@@ -207,11 +240,12 @@ const handleSubmit = (e: React.FormEvent) => {
                 const currentGlobalDefaultsForEmbedded: BuildingFormData = {
                   floorsPerBuilding: formData.buildings.floorsPerBuilding,
                   elevatorsPerBuilding: formData.buildings.elevatorsPerBuilding,
+                  dispatchStrategy: formData.buildings.dispatchStrategy,
                   initialElevatorFloor: formData.buildings.initialElevatorFloor,
                   doorOpenTimeMs: formData.timing.doorOpenTimeMs,
                   doorTransitionTimeMs: formData.timing.doorTransitionTimeMs,
-                  floorTravelTimeMs: formData.timing.floorTravelTimeMs,
                   delayPerFloorMs: formData.timing.delayPerFloorMs,
+                  floorTravelTimeMs: formData.timing.floorTravelTimeMs,
                 };
                 return (
                   <EmbeddedBuildingConfig

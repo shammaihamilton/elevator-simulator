@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { useSimulationStore } from "@/store/simulationStore";
@@ -5,6 +6,8 @@ import { buildingFieldSchema } from "@/config/buildingFieldSchema";
 import styles from "./BuildingConfigDialog.module.scss";
 import FormSection from "../common/FormSection";
 import NumberField from "../common/NumberField";
+import SelectField from "../common/SelectField";
+import { DispatchStrategy } from "@/types/enums/dispatchStrategy.enums";
 
 export type BuildingFormData = {
   floorsPerBuilding: number;
@@ -14,6 +17,7 @@ export type BuildingFormData = {
   doorTransitionTimeMs: number;
   floorTravelTimeMs: number;
   delayPerFloorMs: number;
+  dispatchStrategy: DispatchStrategy | null;
 };
 
 interface BuildingConfigDialogProps {
@@ -44,6 +48,7 @@ const BuildingConfigDialog: React.FC<BuildingConfigDialogProps> = ({
       doorTransitionTimeMs: globalSettings.timing.doorTransitionTimeMs,
       floorTravelTimeMs: globalSettings.timing.floorTravelTimeMs,
       delayPerFloorMs: globalSettings.timing.delayPerFloorMs,
+      dispatchStrategy: globalSettings.buildings.dispatchStrategy,
       ...specificBuildingSettings,
     }),
     [globalSettings, specificBuildingSettings]
@@ -59,16 +64,33 @@ const BuildingConfigDialog: React.FC<BuildingConfigDialogProps> = ({
     setFormData((fd) => ({ ...fd, [key]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateBuildingSettings(buildingIndex, formData);
-    onClose();
+  const handleDispatchStrategyChange = (value: string) => {
+    setFormData((fd) => ({ ...fd, dispatchStrategy: value as DispatchStrategy }));
   };
+
+  const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  // Ensure dispatchStrategy is never null
+  const settingsToUpdate = {
+    ...formData,
+    dispatchStrategy: formData.dispatchStrategy || DispatchStrategy.ETA_ONLY // or whatever default you want
+  };
+  
+  updateBuildingSettings(buildingIndex, settingsToUpdate);
+  onClose();
+};
 
   const handleReset = () => {
     updateBuildingSettings(buildingIndex, null);
     onClose();
   };
+
+  // Get dispatch strategy options
+  const dispatchStrategyOptions = Object.values(DispatchStrategy).map(strategy => ({
+    value: strategy,
+    label: strategy
+  }));
 
   return (
     <Dialog open={isOpen} onClose={onClose} className={styles.dialog}>
@@ -93,18 +115,33 @@ const BuildingConfigDialog: React.FC<BuildingConfigDialogProps> = ({
                     : "Timing Parameters"
                 }
                 className={styles.section}
-                contentClassName={styles.fields} // <-- apply your grid here
+                contentClassName={styles.fields}
               >
-                {buildingFieldSchema[section].map((def) => (
-                  <NumberField
-                    key={def.key}
-                    label={def.label}
-                    min={def.min}
-                    step={def.step}
-                    value={formData[def.key]}
-                    onChange={(val) => handleChange(def.key, val)}
+                {buildingFieldSchema[section].map((def) => {
+                  // Check if the key exists in formData and ensure it's a number
+                  const fieldValue = formData[def.key];
+                  const numericValue = typeof fieldValue === "number" ? fieldValue : 0;
+                  
+                  return (
+                    <NumberField
+                      key={def.key}
+                      label={def.label}
+                      min={def.min}
+                      step={def.step}
+                      value={numericValue}
+                      onChange={(val) => handleChange(def.key, val)}
+                    />
+                  );
+                })}
+                {/* Add dispatch strategy field to building params section */}
+                {section === "buildingParams" && (
+                  <SelectField
+                    label="Dispatch Strategy"
+                    value={formData.dispatchStrategy || ""}
+                    options={dispatchStrategyOptions}
+                    onChange={handleDispatchStrategyChange}
                   />
-                ))}
+                )}
               </FormSection>
             ))}
 

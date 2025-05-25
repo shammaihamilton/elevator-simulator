@@ -1,4 +1,3 @@
-
 import { create, StateCreator } from "zustand";
 import { ElevatorManagerFactory } from "@/services/ElevatorManagerFactory";
 import { ElevatorRequestFactory } from "@/services/PassengerRequestFactory";
@@ -8,9 +7,13 @@ import {
   EffectiveBuildingSettings,
   IElevatorManager,
 } from "../interfaces";
-import { RequestStatus, ElevatorDoorState } from "../types/enums";
-import { SettingsSchema, AppSettings } from '@/config/settingsSchema';
-import { BuildingSpecificSettings } from "@/interfaces/settings.interface";
+import {
+  RequestStatus,
+  ElevatorDoorState,
+  DispatchStrategy,
+} from "../types/enums";
+import { SettingsSchema, AppSettings } from "@/config/settingsSchema";
+import { EffectiveBuildingSettings as BuildingSpecificSettings } from "@/interfaces/settings.interface";
 import loadSettingsFromLocalStorage from "@/utils/loadSettingsFromLocalStorage";
 
 interface FloorStatus {
@@ -24,14 +27,24 @@ export interface SimulationStore extends SimulationState {
   floorStatuses: Record<string, FloorStatus>;
   getFloorStatus: (buildingIndex: number, floorNumber: number) => FloorStatus;
   updateFloorStatuses: () => void;
-  getEffectiveSettingsForBuilding: (buildingIndex: number) => EffectiveBuildingSettings;
-  requestElevator: (buildingIndex: number, sourceFloor: number, destinationFloor: number) => void;
+  getEffectiveSettingsForBuilding: (
+    buildingIndex: number
+  ) => EffectiveBuildingSettings;
+  requestElevator: (
+    buildingIndex: number,
+    sourceFloor: number,
+    destinationFloor: number
+  ) => void;
   tick: () => void;
   pauseSimulation: () => void;
   resumeSimulation: () => void;
+  setDispatchStrategy: (dispatchStrategy: DispatchStrategy) => void;
   reset: () => void;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
-  updateBuildingSettings: (buildingIndex: number, settings: BuildingSpecificSettings | null) => void;
+  updateBuildingSettings: (
+    buildingIndex: number,
+    settings: BuildingSpecificSettings | null
+  ) => void;
 }
 
 const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
@@ -41,9 +54,10 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
     specificSettings: Record<number, BuildingSpecificSettings | null>
   ): EffectiveBuildingSettings => {
     const buildingOverrides = specificSettings[buildingIndex];
-    
+
     if (!buildingOverrides) {
       return {
+        dispatchStrategy: globalSettings.buildings.dispatchStrategy,
         floorsPerBuilding: globalSettings.buildings.floorsPerBuilding,
         elevatorsPerBuilding: globalSettings.buildings.elevatorsPerBuilding,
         initialElevatorFloor: globalSettings.buildings.initialElevatorFloor,
@@ -53,21 +67,41 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
         delayPerFloorMs: globalSettings.timing.delayPerFloorMs,
       };
     }
-    
+
     return {
-      floorsPerBuilding: buildingOverrides.floorsPerBuilding ?? globalSettings.buildings.floorsPerBuilding,
-      elevatorsPerBuilding: buildingOverrides.elevatorsPerBuilding ?? globalSettings.buildings.elevatorsPerBuilding,
-      initialElevatorFloor: buildingOverrides.initialElevatorFloor ?? globalSettings.buildings.initialElevatorFloor,
-      doorOpenTimeMs: buildingOverrides.doorOpenTimeMs ?? globalSettings.timing.doorOpenTimeMs,
-      doorTransitionTimeMs: buildingOverrides.doorTransitionTimeMs ?? globalSettings.timing.doorTransitionTimeMs,
-      floorTravelTimeMs: buildingOverrides.floorTravelTimeMs ?? globalSettings.timing.floorTravelTimeMs,
-      delayPerFloorMs: buildingOverrides.delayPerFloorMs ?? globalSettings.timing.delayPerFloorMs,
+      floorsPerBuilding:
+        buildingOverrides.floorsPerBuilding ??
+        globalSettings.buildings.floorsPerBuilding,
+      elevatorsPerBuilding:
+        buildingOverrides.elevatorsPerBuilding ??
+        globalSettings.buildings.elevatorsPerBuilding,
+      dispatchStrategy:
+        buildingOverrides.dispatchStrategy ??
+        globalSettings.buildings.dispatchStrategy,
+      initialElevatorFloor:
+        buildingOverrides.initialElevatorFloor ??
+        globalSettings.buildings.initialElevatorFloor,
+      doorOpenTimeMs:
+        buildingOverrides.doorOpenTimeMs ??
+        globalSettings.timing.doorOpenTimeMs,
+      doorTransitionTimeMs:
+        buildingOverrides.doorTransitionTimeMs ??
+        globalSettings.timing.doorTransitionTimeMs,
+      floorTravelTimeMs:
+        buildingOverrides.floorTravelTimeMs ??
+        globalSettings.timing.floorTravelTimeMs,
+      delayPerFloorMs:
+        buildingOverrides.delayPerFloorMs ??
+        globalSettings.timing.delayPerFloorMs,
     };
   };
 
   const _initManagers = (
     currentGlobalSettings: AppSettings,
-    currentBuildingSpecificSettings: Record<number, BuildingSpecificSettings | null>
+    currentBuildingSpecificSettings: Record<
+      number,
+      BuildingSpecificSettings | null
+    >
   ): IElevatorManager[] => {
     const numBuildings = currentGlobalSettings.buildings.numberOfBuildings;
 
@@ -78,24 +112,27 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
         currentBuildingSpecificSettings
       );
 
-      const elevatorConfigs = Array.from({ length: effectiveSettings.elevatorsPerBuilding }).map(
-        () => ({
-          initialFloor: effectiveSettings.initialElevatorFloor,
-          timing: {
-            doorOpenTimeMs: effectiveSettings.doorOpenTimeMs,
-            delayPerFloorMs: effectiveSettings.delayPerFloorMs,
-            doorTransitionTimeMs: effectiveSettings.doorTransitionTimeMs,
-            floorTravelTimeMs: effectiveSettings.floorTravelTimeMs,
-          },
-        })
-      );
+      const elevatorConfigs = Array.from({
+        length: effectiveSettings.elevatorsPerBuilding,
+      }).map(() => ({
+        initialFloor: effectiveSettings.initialElevatorFloor,
+        timing: {
+          doorOpenTimeMs: effectiveSettings.doorOpenTimeMs,
+          delayPerFloorMs: effectiveSettings.delayPerFloorMs,
+          doorTransitionTimeMs: effectiveSettings.doorTransitionTimeMs,
+          floorTravelTimeMs: effectiveSettings.floorTravelTimeMs,
+        },
+      }));
       return ElevatorManagerFactory.create(`B${bIdx + 1}`, elevatorConfigs);
     });
   };
 
   const _generateInitialFloorStatuses = (
     currentGlobalSettings: AppSettings,
-    currentBuildingSpecificSettings: Record<number, BuildingSpecificSettings | null>
+    currentBuildingSpecificSettings: Record<
+      number,
+      BuildingSpecificSettings | null
+    >
   ): Record<string, FloorStatus> => {
     const statuses: Record<string, FloorStatus> = {};
     const defaultStatus = {
@@ -103,7 +140,7 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
       etaSeconds: null,
       isElevatorServicing: false,
     };
-    
+
     const numBuildings = currentGlobalSettings.buildings.numberOfBuildings;
 
     for (let building = 0; building < numBuildings; building++) {
@@ -112,7 +149,7 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
         currentGlobalSettings,
         currentBuildingSpecificSettings
       );
-      
+
       for (let floor = 1; floor <= floorsPerBuilding; floor++) {
         statuses[`${building}-${floor}`] = { ...defaultStatus };
       }
@@ -124,7 +161,9 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
     managers: IElevatorManager[],
     currentTime: number,
     numBuildings: number,
-    getEffectiveSettingsForBuilding: (buildingIndex: number) => EffectiveBuildingSettings
+    getEffectiveSettingsForBuilding: (
+      buildingIndex: number
+    ) => EffectiveBuildingSettings
   ): Record<string, FloorStatus> => {
     const updatedStatuses: Record<string, FloorStatus> = {};
     const defaultStatus = {
@@ -141,12 +180,13 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
 
       for (let f = 1; f <= floorsPerBuilding; f++) {
         const key = `${b}-${f}`;
-        
+
         // Check if elevator is servicing this floor
-         const isElevatorServicing = manager.elevators.some(
-          (elevator) => elevator.currentFloor === f && 
-                       (elevator.doorState === ElevatorDoorState.OPEN || 
-                        elevator.doorState === ElevatorDoorState.OPENING)
+        const isElevatorServicing = manager.elevators.some(
+          (elevator) =>
+            elevator.currentFloor === f &&
+            (elevator.doorState === ElevatorDoorState.OPEN ||
+              elevator.doorState === ElevatorDoorState.OPENING)
         );
 
         if (isElevatorServicing) {
@@ -171,22 +211,33 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
             }
           }
         }
-        updatedStatuses[key] = floorHasActiveRequest && minEtaMs !== null ? 
-          {
-            requestStatus: RequestStatus.WAITING_FOR_PICKUP,
-            // etaSeconds: Math.max(0, Math.ceil(minEtaMs / 1000)),
-            etaSeconds: minEtaMs,
-            isElevatorServicing: false,
-          } : { ...defaultStatus };
+        updatedStatuses[key] =
+          floorHasActiveRequest && minEtaMs !== null
+            ? {
+                requestStatus: RequestStatus.WAITING_FOR_PICKUP,
+                // etaSeconds: Math.max(0, Math.ceil(minEtaMs / 1000)),
+                etaSeconds: minEtaMs,
+                isElevatorServicing: false,
+              }
+            : { ...defaultStatus };
       }
     }
     return updatedStatuses;
   };
 
   const initialGlobalSettings = loadSettingsFromLocalStorage();
-  const initialBuildingSpecificSettings: Record<number, BuildingSpecificSettings | null> = {};
-  const initialManagers = _initManagers(initialGlobalSettings, initialBuildingSpecificSettings);
-  const initialFloorStatuses = _generateInitialFloorStatuses(initialGlobalSettings, initialBuildingSpecificSettings);
+  const initialBuildingSpecificSettings: Record<
+    number,
+    BuildingSpecificSettings | null
+  > = {};
+  const initialManagers = _initManagers(
+    initialGlobalSettings,
+    initialBuildingSpecificSettings
+  );
+  const initialFloorStatuses = _generateInitialFloorStatuses(
+    initialGlobalSettings,
+    initialBuildingSpecificSettings
+  );
 
   return {
     managers: initialManagers,
@@ -196,12 +247,20 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
     floorStatuses: initialFloorStatuses,
     buildingSpecificSettings: initialBuildingSpecificSettings,
     resetCounter: 0,
+    dispatchStrategy: initialGlobalSettings.buildings.dispatchStrategy,
 
+    // Actions
     reset: () => {
       const defaultGlobalSettings = SettingsSchema.parse({});
       const defaultBuildingSpecificSettings = {};
-      const newManagers = _initManagers(defaultGlobalSettings, defaultBuildingSpecificSettings);
-      const newFloorStatuses = _generateInitialFloorStatuses(defaultGlobalSettings, defaultBuildingSpecificSettings);
+      const newManagers = _initManagers(
+        defaultGlobalSettings,
+        defaultBuildingSpecificSettings
+      );
+      const newFloorStatuses = _generateInitialFloorStatuses(
+        defaultGlobalSettings,
+        defaultBuildingSpecificSettings
+      );
 
       try {
         set({
@@ -213,9 +272,12 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
           floorStatuses: newFloorStatuses,
           resetCounter: get().resetCounter + 1,
         });
-        
+
         try {
-          localStorage.setItem("appSettings", JSON.stringify(defaultGlobalSettings));
+          localStorage.setItem(
+            "appSettings",
+            JSON.stringify(defaultGlobalSettings)
+          );
         } catch (e) {
           console.error("Failed to save settings to localStorage:", e);
         }
@@ -224,16 +286,64 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
       }
     },
 
-    getEffectiveSettingsForBuilding: (buildingIndex: number): EffectiveBuildingSettings => {
+    // Replace the broken setDispatchStrategy function in your simulationStore.ts with this:
+
+    setDispatchStrategy: (dispatchStrategy: DispatchStrategy) => {
+      try {
+        const { settings, buildingSpecificSettings } = get();
+
+        // Update the global settings with new dispatch strategy
+        const updatedSettings = {
+          ...settings,
+          buildings: {
+            ...settings.buildings,
+            dispatchStrategy: dispatchStrategy,
+          },
+        };
+
+        // Reinitialize managers with new dispatch strategy
+        const newManagers = _initManagers(
+          updatedSettings,
+          buildingSpecificSettings
+        );
+
+        // Update managers to use new dispatch strategy
+        newManagers.forEach((manager) => {
+          if (
+            manager.setDispatchStrategy &&
+            typeof manager.setDispatchStrategy === "function"
+          ) {
+            manager.setDispatchStrategy(dispatchStrategy);
+          }
+        });
+
+        set({
+          settings: updatedSettings,
+          managers: newManagers,
+          dispatchStrategy: dispatchStrategy,
+          resetCounter: get().resetCounter + 1,
+        });
+      } catch (error) {
+        console.error("Error updating dispatch strategy:", error);
+      }
+    },
+
+    getEffectiveSettingsForBuilding: (
+      buildingIndex: number
+    ): EffectiveBuildingSettings => {
       const { settings, buildingSpecificSettings } = get();
-      return _getEffectiveSettingsForBuilding(buildingIndex, settings, buildingSpecificSettings);
+      return _getEffectiveSettingsForBuilding(
+        buildingIndex,
+        settings,
+        buildingSpecificSettings
+      );
     },
 
     updateFloorStatuses: () => {
       const { managers, currentTime, settings } = get();
       const floorStatuses = _updateFloorStatusesWithData(
-        managers, 
-        currentTime, 
+        managers,
+        currentTime,
         settings.buildings.numberOfBuildings,
         get().getEffectiveSettingsForBuilding
       );
@@ -242,11 +352,13 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
 
     getFloorStatus: (buildingIndex: number, floorNumber: number) => {
       const key = `${buildingIndex}-${floorNumber}`;
-      return get().floorStatuses[key] || {
-        requestStatus: RequestStatus.PENDING_ASSIGNMENT,
-        etaSeconds: null,
-        isElevatorServicing: false,
-      };
+      return (
+        get().floorStatuses[key] || {
+          requestStatus: RequestStatus.PENDING_ASSIGNMENT,
+          etaSeconds: null,
+          isElevatorServicing: false,
+        }
+      );
     },
 
     requestElevator: (buildingIndex, sourceFloor, destinationFloor) => {
@@ -254,12 +366,18 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
       const manager = managers[buildingIndex];
 
       if (manager) {
-        const request = ElevatorRequestFactory.create(sourceFloor, destinationFloor, currentTime);
+        const request = ElevatorRequestFactory.create(
+          sourceFloor,
+          destinationFloor,
+          currentTime
+        );
         manager.handleRequest(request, currentTime);
         set({ managers: [...managers] });
         get().updateFloorStatuses();
       } else {
-        console.error(`Elevator manager for building index ${buildingIndex} not found.`);
+        console.error(
+          `Elevator manager for building index ${buildingIndex} not found.`
+        );
       }
     },
 
@@ -268,9 +386,12 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
       if (isPaused) return;
 
       // Update elevators
-      managers.forEach(manager => {
+      managers.forEach((manager) => {
         manager.elevators.forEach((elevator: IElevatorFSM) => {
-          if (!elevator.isFSMPaused?.() || typeof elevator.isFSMPaused !== "function") {
+          if (
+            !elevator.isFSMPaused?.() ||
+            typeof elevator.isFSMPaused !== "function"
+          ) {
             elevator.update(currentTime);
           }
         });
@@ -278,23 +399,23 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
 
       // Calculate new time
       const newSimTime = currentTime + settings.simulation.simulationTickMs;
-      
+
       // Update floor statuses
       const floorStatuses = _updateFloorStatusesWithData(
-        managers, 
-        newSimTime, 
+        managers,
+        newSimTime,
         settings.buildings.numberOfBuildings,
         get().getEffectiveSettingsForBuilding
       );
-      
+
       set({ currentTime: newSimTime, floorStatuses });
     },
 
     pauseSimulation: () => {
       const { isPaused, managers, currentTime } = get();
       if (!isPaused) {
-        managers.forEach(manager => {
-          manager.elevators.forEach(elevator => {
+        managers.forEach((manager) => {
+          manager.elevators.forEach((elevator) => {
             elevator.pauseFSM?.(currentTime);
           });
         });
@@ -305,8 +426,8 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
     resumeSimulation: () => {
       const { isPaused, managers, currentTime } = get();
       if (isPaused) {
-        managers.forEach(manager => {
-          manager.elevators.forEach(elevator => {
+        managers.forEach((manager) => {
+          manager.elevators.forEach((elevator) => {
             elevator.resumeFSM?.(currentTime);
           });
         });
@@ -316,20 +437,35 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
 
     updateSettings: (newGlobalSettingsPartial: Partial<AppSettings>) => {
       const { settings, buildingSpecificSettings } = get();
-      
+
       // Deep merge settings
       const potentialNewSettings = {
         ...settings,
         ...newGlobalSettingsPartial,
-        buildings: { ...settings.buildings, ...(newGlobalSettingsPartial.buildings || {}) },
-        timing: { ...settings.timing, ...(newGlobalSettingsPartial.timing || {}) },
-        simulation: { ...settings.simulation, ...(newGlobalSettingsPartial.simulation || {}) },
+        buildings: {
+          ...settings.buildings,
+          ...(newGlobalSettingsPartial.buildings || {}),
+        },
+        timing: {
+          ...settings.timing,
+          ...(newGlobalSettingsPartial.timing || {}),
+        },
+        simulation: {
+          ...settings.simulation,
+          ...(newGlobalSettingsPartial.simulation || {}),
+        },
       };
 
       try {
         const validatedSettings = SettingsSchema.parse(potentialNewSettings);
-        const newManagers = _initManagers(validatedSettings, buildingSpecificSettings);
-        const newFloorStatuses = _generateInitialFloorStatuses(validatedSettings, buildingSpecificSettings);
+        const newManagers = _initManagers(
+          validatedSettings,
+          buildingSpecificSettings
+        );
+        const newFloorStatuses = _generateInitialFloorStatuses(
+          validatedSettings,
+          buildingSpecificSettings
+        );
 
         set({
           settings: validatedSettings,
@@ -349,8 +485,14 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
       const updatedBuildingSpecificSettings = { ...buildingSpecificSettings };
       updatedBuildingSpecificSettings[buildingIndex] = newSpecificSettings;
 
-      const newManagers = _initManagers(settings, updatedBuildingSpecificSettings);
-      const newFloorStatuses = _generateInitialFloorStatuses(settings, updatedBuildingSpecificSettings);
+      const newManagers = _initManagers(
+        settings,
+        updatedBuildingSpecificSettings
+      );
+      const newFloorStatuses = _generateInitialFloorStatuses(
+        settings,
+        updatedBuildingSpecificSettings
+      );
 
       set({
         buildingSpecificSettings: updatedBuildingSpecificSettings,
@@ -358,7 +500,7 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
         floorStatuses: newFloorStatuses,
         currentTime: settings.simulation.currentTime,
         isPaused: false,
-        resetCounter: get().resetCounter + 1
+        resetCounter: get().resetCounter + 1,
       });
     },
   };

@@ -1,60 +1,26 @@
 import { AppSettings as ZodAppSettings } from '@/config/settingsSchema';
+import { DispatchStrategy } from '@/types/enums';
 
 export type AppSettings = ZodAppSettings;
 
-// export interface BuildingSettings {
-//   numberOfBuildings: number;
-//   floorsPerBuilding: number;
-//   elevatorsPerBuilding: number;
-//   initialElevatorFloor: number;
-// }
-
-// export interface ElevatorTimingSettings {
-//   doorOpenTimeMs: number;
-//   delayPerFloorMs: number;
-//   doorTransitionTimeMs: number;
-//   floorTravelTimeMs: number;
-// }
-
-// export interface SimulationSettings {
-//   simulationTickMs: number;
-//   simulationSpeedFactor: number;
-//   currentTime?: number;
-// }
-
-
-// export interface BuildingSpecificSettings {
-//   floorsPerBuilding?: number;
-//   elevatorsPerBuilding?: number;
-//   initialElevatorFloor?: number;
-//   doorOpenTimeMs?: number;
-//   doorTransitionTimeMs?: number;
-  // floorTravelTimeMs?: number;
-  // delayPerFloorMs?: number;
-// }
-
-// export interface AppSettings {
-//   buildings: BuildingSettings;
-//   timing: ElevatorTimingSettings;
-//   simulation: SimulationSettings;
-// }
-
+// Type aliases for convenience
 export type ElevatorTimingSettings = ZodAppSettings['timing'];
 export type BuildingSettings = ZodAppSettings['buildings'];
 export type SimulationSettings = ZodAppSettings['simulation'];
 
-// You might still need BuildingSpecificSettings if it's not fully covered by Zod or used differently
-
-export interface BuildingSpecificSettings {
-  floorsPerBuilding?: number;
-  elevatorsPerBuilding?: number;
-  initialElevatorFloor?: number;
-  doorOpenTimeMs?: number;
-  doorTransitionTimeMs?: number;
-  floorTravelTimeMs?: number;
-  delayPerFloorMs?: number;
+// Form data interface for building configuration dialog
+export interface BuildingFormData {
+  floorsPerBuilding: number;
+  elevatorsPerBuilding: number;
+  dispatchStrategy: DispatchStrategy;
+  initialElevatorFloor: number;
+  doorOpenTimeMs: number;
+  doorTransitionTimeMs: number;
+  floorTravelTimeMs: number;
+  delayPerFloorMs: number;
 }
 
+// For components that need effective settings (combining building + timing)
 export interface EffectiveBuildingSettings {
   floorsPerBuilding: number;
   elevatorsPerBuilding: number;
@@ -63,5 +29,5 @@ export interface EffectiveBuildingSettings {
   delayPerFloorMs: number;
   doorTransitionTimeMs: number;
   floorTravelTimeMs: number;
+  dispatchStrategy: DispatchStrategy;
 }
- 

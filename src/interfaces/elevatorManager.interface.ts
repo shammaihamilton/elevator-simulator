@@ -1,3 +1,4 @@
+import { DispatchStrategy } from "@/types/enums";
 import { ElevatorStateObject, IElevatorFSM } from "./elevatorFSM.inteface";
 import { PassengerRequest } from "./passengerRequest.interface";
 
@@ -16,6 +17,8 @@ export interface IElevatorManager {
   handleRequest(request: PassengerRequest, currentTime: number): void;
   tick(currentTime: number): void;
   reset(): void;
+  setDispatchStrategy(mode: DispatchStrategy): void;
+  getDispatchStrategy(): DispatchStrategy;
   getElevatorStates(): ElevatorStateObject[];
   getElevatorById(id: string): IElevatorFSM | undefined;
   pause(id: string): void;
