@@ -78,7 +78,7 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "0 13px",
+          padding: "0 10px",
           backgroundColor,
           transition: "background-color 0.3s ease",
         }}
@@ -90,7 +90,7 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
             color: "black",
             fontWeight: "500",
             backgroundColor: "lightgray",
-            padding: "5px 5px",
+            padding: "7px 6px",
             borderRadius: "4px",
           }}
         >
@@ -108,7 +108,7 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
                   color: "black",
                   fontWeight: "500",
                   backgroundColor: "lightgray",
-                  padding: "5px 5px",
+                  padding: "5px 4px",
                   borderRadius: "4px",
                 }}
               >

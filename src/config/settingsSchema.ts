@@ -25,7 +25,7 @@ export const BuildingsSettingsSchema = z.object({
   export const TimingSettingsSchema = z.object({
     doorOpenTimeMs: z.number().positive().default(500),
     delayPerFloorMs: z.number().positive().default(2000),
-    doorTransitionTimeMs: z.number().positive().default(1000),
+    doorTransitionTimeMs: z.number().positive().default(500),
     floorTravelTimeMs: z.number().positive().default(500),
   })
 
