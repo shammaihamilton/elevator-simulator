@@ -2,43 +2,6 @@ import { AppSettings as ZodAppSettings } from '@/config/settingsSchema';
 
 export type AppSettings = ZodAppSettings;
 
-// export interface BuildingSettings {
-//   numberOfBuildings: number;
-//   floorsPerBuilding: number;
-//   elevatorsPerBuilding: number;
-//   initialElevatorFloor: number;
-// }
-
-// export interface ElevatorTimingSettings {
-//   doorOpenTimeMs: number;
-//   delayPerFloorMs: number;
-//   doorTransitionTimeMs: number;
-//   floorTravelTimeMs: number;
-// }
-
-// export interface SimulationSettings {
-//   simulationTickMs: number;
-//   simulationSpeedFactor: number;
-//   currentTime?: number;
-// }
-
-
-// export interface BuildingSpecificSettings {
-//   floorsPerBuilding?: number;
-//   elevatorsPerBuilding?: number;
-//   initialElevatorFloor?: number;
-//   doorOpenTimeMs?: number;
-//   doorTransitionTimeMs?: number;
-  // floorTravelTimeMs?: number;
-  // delayPerFloorMs?: number;
-// }
-
-// export interface AppSettings {
-//   buildings: BuildingSettings;
-//   timing: ElevatorTimingSettings;
-//   simulation: SimulationSettings;
-// }
-
 export type ElevatorTimingSettings = ZodAppSettings['timing'];
 export type BuildingSettings = ZodAppSettings['buildings'];
 export type SimulationSettings = ZodAppSettings['simulation'];

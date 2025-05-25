@@ -17,6 +17,7 @@ export default function Layout() {
       }}>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', gap: '2rem', justifyContent: 'center' }}>
           <li><Link to="/" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem' }}>Home</Link></li>
+          <li><Link to="/about" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem' }}>About</Link></li>
           <li><Link to="/simulation" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem' }}>Simulation</Link></li>
           <li><Link to="/configure" style={{ color: 'white', textDecoration: 'none', padding: '0.5rem' }}>Full Configure</Link></li>
         </ul>

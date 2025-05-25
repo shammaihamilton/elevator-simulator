@@ -34,11 +34,9 @@ export const getDomBasedYForFloor = (
 
 
   export const logFloorPositions = ( floorRefs: Record<number, HTMLDivElement | null>) => {
-    console.log("Floor positions:");
     Object.entries(floorRefs).forEach(([floor, ref]) => {
       if (ref) {
         const y = getDomBasedYForFloor(parseInt(floor), floorRefs);
-        console.log(`Floor ${floor}: Y = ${y}`);
       }
     });
   };

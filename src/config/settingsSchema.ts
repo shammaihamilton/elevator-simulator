@@ -1,12 +1,10 @@
 import { z } from 'zod';
 
-/**
- * Zod schema for AppSettings, with defaults and runtime validation/coercion.
- */
+
 export const BuildingsSettingsSchema = z.object({
     numberOfBuildings: z.number().int().positive().default(1).describe("Total number of buildings in the simulation"),
     floorsPerBuilding: z.number().int().min(2).positive().default(7),
-    elevatorsPerBuilding: z.number().int().positive().default(3),
+    elevatorsPerBuilding: z.number().int().positive().default(1),
     initialElevatorFloor: z.number().int().min(0).default(0)
     }).refine(
     (data) => data.initialElevatorFloor < data.floorsPerBuilding,
@@ -23,14 +21,14 @@ export const BuildingsSettingsSchema = z.object({
   )
 
   export const TimingSettingsSchema = z.object({
-    doorOpenTimeMs: z.number().positive().default(1000),
+    doorOpenTimeMs: z.number().positive().default(500),
     delayPerFloorMs: z.number().positive().default(2000),
-    doorTransitionTimeMs: z.number().positive().default(1000),
+    doorTransitionTimeMs: z.number().positive().default(200),
     floorTravelTimeMs: z.number().positive().default(500),
   })
 
   export const SimulationSettingsSchema = z.object({
-    simulationTickMs: z.number().positive().default(100),
+    simulationTickMs: z.number().positive().default(500),
     simulationSpeedFactor: z.number().positive().default(1),
     currentTime: z.number().nonnegative().default(0),
   })

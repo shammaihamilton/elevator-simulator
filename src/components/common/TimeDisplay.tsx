@@ -10,7 +10,7 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ milliseconds }) => {
   const totalSeconds = Math.floor(totalMs / 1000);
   const msTwoDigits = Math.floor((totalMs % 1000) / 10)
     .toString()
-    .padStart(2, "0");
+    .padStart(1, "0");
 
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -21,19 +21,38 @@ const TimeDisplay: React.FC<TimeDisplayProps> = ({ milliseconds }) => {
   const mm = minutes.toString().padStart(2, "0");
   const ss = seconds.toString().padStart(2, "0");
 
-  let label: string;
+  let time: string;
   if (hours > 0) {
     // H:MM:SS.xx
-    label = `${hh}:${mm}:${ss}.${msTwoDigits}`;
+    time = `${hh}:${mm}:${ss}.${msTwoDigits}`;
   } else if (minutes > 0) {
     // M:SS.xx (no leading zero on minutes)
-    label = `${minutes}:${ss}.${msTwoDigits}`;
+    time = `${minutes}:${ss}.${msTwoDigits}`;
   } else {
     // S.xx  (seconds without leading zero, milliseconds two digits)
-    label = `${seconds}.${msTwoDigits}`;
-  }
+    time = `${seconds}.${msTwoDigits}`;
+    // time = `${ss}`;
+  } 
 
-  return <span>{label}</span>;
+  return (
+  <span
+    style={{
+      display: "inline-block",
+      // fontFamily: "monospace", // fixed-width font
+      textAlign: "center",
+      minWidth: "50px", 
+      maxWidth: "55px",
+      padding: "5px 8px",
+      color: "black",
+      fontWeight: "500",
+      backgroundColor: "lightgray",
+      borderRadius: "4px",
+      height: "20px",
+    }}
+  >
+    {time}
+  </span>
+);
 };
 
 export default TimeDisplay;

@@ -1,3 +1,5 @@
+
+
 // core/eta-helpers.ts
 import { ElevatorState } from '../types/enums';
 import { PassengerRequest } from '../interfaces';
@@ -20,15 +22,20 @@ interface Segment { from: number; to: number; stop: boolean; }
 /* ───────── cached math helpers ───────── */
 
 export function fullStopMs(t: ElevatorTimingSettings) {
-  return t.doorTransitionTimeMs * 2 +
-         Math.max(t.doorOpenTimeMs, t.delayPerFloorMs);
+  const {  doorOpenTimeMs, delayPerFloorMs } = t;
+  return  Math.max(doorOpenTimeMs, delayPerFloorMs) 
+  
 }
+ 
 const travelMs = (floor1: number, floor2: number, t: ElevatorTimingSettings) =>
-  Math.abs(floor1 - floor2) * t.floorTravelTimeMs;
+  Math.abs(floor1 - floor2) * t.floorTravelTimeMs 
+
+
 
 
 const segMs = (s: Segment, t: ElevatorTimingSettings) =>
-  travelMs(s.from, s.to, t) + (s.stop ? fullStopMs(t) : 0);
+  travelMs(s.from, s.to, t) + (s.stop ? fullStopMs(t) : 0)
+
 
 /* ───────── pure ETA calculator ───────── */
 
@@ -37,41 +44,42 @@ export function calcETA(p: ETACalcParams): number {
   const proj: Projection = { time: currentTime, floor: currentFloor };
   const STOP = fullStopMs(timing);
 
-  /* 1 ▪ finish current action if any */
   if (p.state !== ElevatorState.IDLE && !p.timingManager.isPaused()) {
     const end = p.timingManager.getActionFinishTime();
     if (end && end > proj.time) {
-      if (p.state === ElevatorState.STOPPED_AT_FLOOR && proj.floor === targetFloor)
-        return Math.max(0, end - STOP - currentTime);
-
-      proj.time = end; // fast‑forward
+      if (p.state === ElevatorState.STOPPED_AT_FLOOR && proj.floor === targetFloor) {
+        return Math.max(0, end - STOP - currentTime)
+      }
+      
+      proj.time = end;
     }
   }
 
-  /* 2 ▪ simulate a *copy* of the queue (no mutation) */
-  const simQueue = p.queue.map(r => ({ ...r }));   // shallow clone
+  const simQueue = p.queue.map(r => ({ ...r }));
 
   for (const req of simQueue) {
     // A) pickup
     if (!req.pickedUp) {
       proj.time += segMs({ from: proj.floor, to: req.sourceFloor, stop: true }, timing);
-      proj.floor  = req.sourceFloor;
+      proj.floor = req.sourceFloor;
 
       if (req.sourceFloor === targetFloor)
-        return Math.max(0, proj.time - STOP - currentTime);
+        return Math.max(0, proj.time - STOP - currentTime)
 
       req.pickedUp = true;   // local to simulation only
     }
 
     // B) drop‑off
-    proj.time += segMs({ from: proj.floor, to: req.destinationFloor, stop: true }, timing);
-    proj.floor  = req.destinationFloor;
+   // proj.time += segMs({ from: proj.floor, to: req.destinationFloor, stop: true }, timing);
+    proj.floor = req.destinationFloor;
 
     if (req.destinationFloor === targetFloor)
-      return Math.max(0, proj.time - STOP - currentTime);
+      return Math.max(0, proj.time - STOP - currentTime) 
   }
 
   /* 3 ▪ direct travel if never hit target */
   proj.time += travelMs(proj.floor, targetFloor, timing);
-  return Math.max(0, proj.time - currentTime);
+  return Math.max(0, proj.time - STOP - currentTime)
 }
+
+

@@ -5,6 +5,7 @@ export const RequestStatus = {
     WAITING_FOR_PICKUP: "WAITING_FOR_PICKUP",
     IN_TRANSIT: "IN_TRANSIT",
     COMPLETED: "COMPLETED",
-    CANCELLED: "CANCELLED"
+    CANCELLED: "CANCELLED",
+    ELEVATOR_PASSING: "ELEVATOR_PASSING",
   } as const;
   export type RequestStatus = typeof RequestStatus[keyof typeof RequestStatus];

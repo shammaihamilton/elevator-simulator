@@ -1,8 +1,5 @@
 
 export default interface IElevatorTimingManager {
-  setDoorOpenEndTime(time: number): void;
-  extendDoorOpenTime(currentTime: number, minimumExtension: number): void;
-
   setPassengerActivityEndTime(time: number | null): void; // Changed: number -> number | null
   extendPassengerActivityTime(currentTime: number, durationMs: number): void;
 

@@ -1,17 +1,14 @@
-import './App.css';
-import './assets/help.css';
+import "./App.css";
+import "./assets/help.css";
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Layout from "./components/Layout";
 
-import HomePage from './pages/HomePage';
+import HomePage from "./pages/HomePage";
 
-
-import BuildingContainer from './components/buildingsComponents/BuildingContainer';
-import GlobalConfigPage from './components/globalConfigPage/GlobalConfigPage';
-
-
-
+import BuildingContainer from "./components/buildingsComponents/BuildingContainer";
+import GlobalConfigPage from "./components/globalConfigPage/GlobalConfigPage";
+// import SystemElevatorsDiagrams from "./pages/SystemElevatorsDiagrams";
 
 function App() {
   return (
@@ -22,6 +19,7 @@ function App() {
           {/* <Route path="/simulation" element={<Building config={defaultElevatorSystemConfig} />} /> */}
           <Route path="/simulation" element={<BuildingContainer />} />
           <Route path="/configure" element={<GlobalConfigPage />} />
+          {/* <Route path="*" element={<SystemElevatorsDiagrams />} /> */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

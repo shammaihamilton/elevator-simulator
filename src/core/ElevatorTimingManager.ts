@@ -11,19 +11,8 @@ export class ElevatorTimingManager implements IElevatorTimingManager {
   constructor(elevatorId: string) {
     this.elevatorId = elevatorId;
   }
-  setDoorOpenEndTime(time: number): void {
-    this.doorOpenEndTime = time;
-  }
-
-  extendDoorOpenTime(currentTime: number, minimumExtension: number): void {
-    const newEndTime = currentTime + minimumExtension;
-    if (this.doorOpenEndTime === null || newEndTime > this.doorOpenEndTime) {
-      this.doorOpenEndTime = newEndTime;
-    }
-  }
 
   setPassengerActivityEndTime(finishTime: number): void {
-    // console.log(`[${this.elevatorId}-TimingManager] setPassengerActivityEndTime to: ${finishTime}`);
     this.passengerActivityEndTime = finishTime;
      // Typically, passenger activity defines the end of a "STOPPED" action
     if (this.actionFinishTime === null || finishTime > this.actionFinishTime) {

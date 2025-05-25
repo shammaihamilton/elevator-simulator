@@ -1,4 +1,3 @@
-
 import {
   ElevatorStateObject,
   ElevatorTimingSettings,
@@ -12,8 +11,7 @@ import {
 import { Queue } from "../data-structures/Queue";
 import { ElevatorTimingManager } from "./ElevatorTimingManager";
 import { generateId } from "@/utils/idGenerator";
-import { calcETA, fullStopMs } from "../utils/etaHelpers";
-
+import { calcETA } from "@/utils/eta-helpers";
 export class ElevatorFSM implements ElevatorFSM {
   id: string;
   currentFloor: number;
@@ -22,8 +20,8 @@ export class ElevatorFSM implements ElevatorFSM {
   queue: Queue<PassengerRequest>;
   timing: ElevatorTimingSettings;
   timingManager: ElevatorTimingManager;
-  public readonly designatedBaseFloor: number;
 
+  public readonly designatedBaseFloor: number;
   constructor(
     id: string,
     initialFloor: number,
@@ -38,81 +36,143 @@ export class ElevatorFSM implements ElevatorFSM {
   }
 
   update(currentTime: number): void {
-    if (this.timingManager.isPaused() || !this.timingManager.isActionComplete(currentTime)) return;
+    if (this.timingManager.isPaused()) {
+      // console.log(`[${this.id}] FSM update skipped, TimingManager is paused.`);
+      return; // Don't process FSM logic if its timers are paused
+    }
 
-    if (this.queue.isEmpty()) {
-      if (this.state !== ElevatorState.IDLE) {
-        this.state = ElevatorState.IDLE;
-        this.doorState = ElevatorDoorState.CLOSED;
-      }
+    if (!this.timingManager.isActionComplete(currentTime)) {
       return;
     }
 
+    // If the queue is empty, return to the base floor
+    if (this.queue.isEmpty()) {
+      // Check if the elevator is at the base floor
+      if (this.state !== ElevatorState.IDLE) {
+        this.state = ElevatorState.IDLE;
+        this.doorState = ElevatorDoorState.CLOSED;
+        this.timingManager.reset();
+      }
+    }
+
     const currentRequest = this.queue.peek();
-    if (!currentRequest) return;
-    
-    const targetFloor = currentRequest.pickedUp ? currentRequest.destinationFloor : currentRequest.sourceFloor;
+    if (!currentRequest) {
+      return;
+    }
+    const targetFloor = currentRequest.pickedUp
+      ? currentRequest.destinationFloor
+      : currentRequest.sourceFloor;
 
     switch (this.state) {
       case ElevatorState.IDLE:
-        if (this.currentFloor !== targetFloor) {
-          this.state = this.currentFloor < targetFloor ? ElevatorState.MOVING_UP : ElevatorState.MOVING_DOWN;
-          this.timingManager.setActionFinishTime(currentTime + this.timing.floorTravelTimeMs);
+        if (this.currentFloor < targetFloor) {
+          this.state = ElevatorState.MOVING_UP;
+          this.timingManager.setActionFinishTime(
+            currentTime + this.timing.floorTravelTimeMs 
+          );
+        } else if (this.currentFloor > targetFloor) {
+          this.state = ElevatorState.MOVING_DOWN;
+          this.timingManager.setActionFinishTime(
+            currentTime + this.timing.floorTravelTimeMs
+          );
         } else {
-          this.handleArrival(currentTime, currentRequest);
+          this.state = ElevatorState.STOPPED_AT_FLOOR;
+          this.doorState = ElevatorDoorState.OPEN;
+          // this.timingManager.setDoorOpenEndTime(
+          //   currentTime + this.timing.doorOpenTimeMs
+          // );
+          this.timingManager.setPassengerActivityEndTime(
+            currentTime + this.timing.delayPerFloorMs
+          );
+
+          if (!currentRequest.pickedUp) {
+            currentRequest.pickedUp = true;
+            currentRequest.requestedAt.markPickedUp(currentTime);
+            currentRequest.status = RequestStatus.IN_TRANSIT;
+          } else {
+            currentRequest.requestedAt.markDroppedOff(currentTime);
+            currentRequest.status = RequestStatus.COMPLETED;
+          }
         }
         break;
 
       case ElevatorState.MOVING_UP:
         this.currentFloor++;
-        this.timingManager.setActionFinishTime(currentTime + this.timing.floorTravelTimeMs);
-        if (this.currentFloor === targetFloor) this.handleArrival(currentTime, currentRequest);
+        this.timingManager.setActionFinishTime(
+          currentTime + this.timing.floorTravelTimeMs  
+        );
+        if (this.currentFloor === targetFloor) {
+          this.state = ElevatorState.STOPPED_AT_FLOOR;
+          this.doorState = ElevatorDoorState.OPEN;
+          // this.timingManager.setDoorOpenEndTime(
+          //   currentTime + this.timing.doorOpenTimeMs
+          // );
+          this.timingManager.setPassengerActivityEndTime(
+            currentTime + this.timing.delayPerFloorMs
+          );
+          if (!currentRequest.pickedUp) {
+            currentRequest.pickedUp = true;
+            currentRequest.requestedAt.markPickedUp(currentTime);
+            currentRequest.status = RequestStatus.IN_TRANSIT;
+          } else {
+            currentRequest.requestedAt.markDroppedOff(currentTime);
+            currentRequest.status = RequestStatus.COMPLETED;
+          }
+        }
         break;
 
       case ElevatorState.MOVING_DOWN:
         this.currentFloor--;
-        this.timingManager.setActionFinishTime(currentTime + this.timing.floorTravelTimeMs);
-        if (this.currentFloor === targetFloor) this.handleArrival(currentTime, currentRequest);
+        this.timingManager.setActionFinishTime(
+          currentTime + this.timing.floorTravelTimeMs
+        );
+        if (this.currentFloor === targetFloor) {
+          this.state = ElevatorState.STOPPED_AT_FLOOR;
+          this.doorState = ElevatorDoorState.OPEN;
+          // this.timingManager.setDoorOpenEndTime(
+          //   currentTime + this.timing.doorOpenTimeMs
+          // );
+          // this.timingManager.setPassengerActivityEndTime(
+          //   currentTime + this.timing.delayPerFloorMs
+          // );
+
+          if (!currentRequest.pickedUp) {
+            currentRequest.pickedUp = true;
+            currentRequest.requestedAt.markPickedUp(currentTime);
+          } else {
+            currentRequest.requestedAt.markDroppedOff(currentTime);
+          }
+        }
         break;
 
       case ElevatorState.STOPPED_AT_FLOOR:
-        if (this.timingManager.isDoorOpenTimeElapsed(currentTime) && 
-            this.timingManager.isPassengerActivityComplete(currentTime)) {
+        if (
+          this.timingManager.isDoorOpenTimeElapsed(currentTime) &&
+          this.timingManager.isPassengerActivityComplete(currentTime)
+        ) {
           this.doorState = ElevatorDoorState.CLOSED;
-          
-          if (currentRequest.pickedUp && this.currentFloor === currentRequest.destinationFloor) {
+
+          if (
+            currentRequest.pickedUp &&
+            this.currentFloor === currentRequest.destinationFloor
+          ) {
             this.queue.dequeue();
           }
-          
+
           this.state = ElevatorState.IDLE;
+          this.doorState = ElevatorDoorState.CLOSED;
           this.timingManager.reset();
         }
         break;
     }
   }
 
-  private handleArrival(currentTime: number, currentRequest: PassengerRequest): void {
-    this.state = ElevatorState.STOPPED_AT_FLOOR;
-    this.doorState = ElevatorDoorState.OPEN;
-    this.timingManager.setDoorOpenEndTime(currentTime + this.timing.doorOpenTimeMs);
-    this.timingManager.setPassengerActivityEndTime(currentTime + this.timing.delayPerFloorMs);
-
-    if (!currentRequest.pickedUp) {
-      currentRequest.pickedUp = true;
-      currentRequest.requestedAt.markPickedUp(currentTime);
-      currentRequest.status = RequestStatus.IN_TRANSIT;
-    } else {
-      currentRequest.requestedAt.markDroppedOff(currentTime);
-      currentRequest.status = RequestStatus.COMPLETED;
-    }
+  pauseFSM(currentTime: number): void {
+    // console.log(`[${this.id}] FSM pause requested at ${currentTime}`);
+    this.timingManager.pause(currentTime);
   }
-
   addStop(request: PassengerRequest): void {
     this.queue.enqueue(request);
-  }
-
-  pauseFSM(currentTime: number): void {
-    this.timingManager.pause(currentTime);
   }
 
   resumeFSM(currentTime: number): void {
@@ -122,7 +182,6 @@ export class ElevatorFSM implements ElevatorFSM {
   isFSMPaused(): boolean {
     return this.timingManager.isPaused();
   }
-
   getNextCriticalTime(): number | null {
     return this.timingManager.getNextCriticalTime();
   }
@@ -136,25 +195,33 @@ export class ElevatorFSM implements ElevatorFSM {
       timing: this.timing,
       state: this.state,
       timingManager: this.timingManager,
+      // nextImmediateStopFloorIfMoving: null
     });
   }
-
   calculateReadyTime(targetFloor: number, now: number): number {
-    return this.calculateETA(targetFloor, now) + fullStopMs(this.timing);
+    return this.calculateETA(targetFloor, now)
   }
 
   getLoad(): number {
+    // 0.0 (empty) .. 1.0 (full).  For now return 0.
     return 0;
   }
+  
 
-  queueContainsFloor(floorNumber: number): boolean {
+  public queueContainsFloor(floorNumber: number): boolean {
     for (const request of this.queue.toArray()) {
-      if (!request.pickedUp && request.sourceFloor === floorNumber) return true;
-      if (request.pickedUp && request.destinationFloor === floorNumber) return true;
+      if (!request.pickedUp && request.sourceFloor === floorNumber) {
+        return true; 
+      }
+      // Check for destination only if it's the *current target* or already picked up
+      if (request.pickedUp && request.destinationFloor === floorNumber) {
+        return true; // Pending drop-off at this floor
+      }
+      // If not picked up, and source is not the floor, don't consider its destination yet
+      // unless your queue logic is very smart (e.g., SCAN algorithm picking up on the way)
     }
     return false;
   }
-
   reset(initialFloor: number = 0): void {
     this.currentFloor = initialFloor;
     this.state = ElevatorState.IDLE;
@@ -191,5 +258,4 @@ export class ElevatorFSM implements ElevatorFSM {
     };
   }
 }
-
 export default ElevatorFSM;

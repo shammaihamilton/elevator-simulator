@@ -97,9 +97,10 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
           Floor {floorNumber}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {requestStatus === RequestStatus.WAITING_FOR_PICKUP &&
+          {
+          requestStatus === RequestStatus.WAITING_FOR_PICKUP &&
             etaSeconds !== null &&
-            etaSeconds >= 0 && (
+            etaSeconds > 0 && (
               <span
                 style={{
                   position: "relative",
@@ -142,3 +143,4 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
 
 Floor.displayName = "Floor";
 export default memo(Floor);
+
