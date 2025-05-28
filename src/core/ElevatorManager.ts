@@ -35,7 +35,7 @@ export class ElevatorManager implements IElevatorManager {
         ? curCar
         : bestCar;
     });
-
+    
     best.addStop(req);
   }
 

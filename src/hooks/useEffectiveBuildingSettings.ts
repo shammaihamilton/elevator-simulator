@@ -21,6 +21,7 @@ export const useEffectiveBuildingSettings = (buildingIndex: number) => {
       doorTransitionTimeMs: globalSettings.timing.doorTransitionTimeMs,
       floorTravelTimeMs: globalSettings.timing.floorTravelTimeMs,
       delayPerFloorMs: globalSettings.timing.delayPerFloorMs,
+      dispatchStrategy: globalSettings.buildings.dispatchStrategy,
       // Indicates if this building uses custom settings
       hasCustomSettings: false,
     };
@@ -47,6 +48,8 @@ export const useEffectiveBuildingSettings = (buildingIndex: number) => {
       globalSettings.timing.floorTravelTimeMs,
     delayPerFloorMs:
       buildingSettings.delayPerFloorMs ?? globalSettings.timing.delayPerFloorMs,
+    dispatchStrategy:
+      buildingSettings.dispatchStrategy ?? globalSettings.buildings.dispatchStrategy, 
     // Indicates if this building uses custom settings
     hasCustomSettings: true,
   };

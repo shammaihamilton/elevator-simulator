@@ -7,7 +7,7 @@ export interface SimulationState {
   managers: IElevatorManager[];
   settings: AppSettings;
   currentTime: number;
-  dispatchStrategy: DispatchStrategy;
+  // dispatchStrategy: DispatchStrategy;
   buildingSpecificSettings: Record<number, EffectiveBuildingSettings | null>;
   isPaused: boolean; // Added: Actual pause state
   // Actions

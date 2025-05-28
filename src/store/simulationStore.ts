@@ -1,3 +1,5 @@
+
+
 import { create, StateCreator } from "zustand";
 import { ElevatorManagerFactory } from "@/services/ElevatorManagerFactory";
 import { ElevatorRequestFactory } from "@/services/PassengerRequestFactory";
@@ -15,12 +17,8 @@ import {
 import { SettingsSchema, AppSettings } from "@/config/settingsSchema";
 import { EffectiveBuildingSettings as BuildingSpecificSettings } from "@/interfaces/settings.interface";
 import loadSettingsFromLocalStorage from "@/utils/loadSettingsFromLocalStorage";
+import { FloorStatus } from "@/interfaces/floorStatus.interface";
 
-interface FloorStatus {
-  requestStatus: RequestStatus;
-  etaSeconds: number | null;
-  isElevatorServicing: boolean;
-}
 
 export interface SimulationStore extends SimulationState {
   resetCounter: number;
@@ -215,7 +213,6 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
           floorHasActiveRequest && minEtaMs !== null
             ? {
                 requestStatus: RequestStatus.WAITING_FOR_PICKUP,
-                // etaSeconds: Math.max(0, Math.ceil(minEtaMs / 1000)),
                 etaSeconds: minEtaMs,
                 isElevatorServicing: false,
               }
@@ -247,7 +244,7 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
     floorStatuses: initialFloorStatuses,
     buildingSpecificSettings: initialBuildingSpecificSettings,
     resetCounter: 0,
-    dispatchStrategy: initialGlobalSettings.buildings.dispatchStrategy,
+    // Removed redundant dispatchStrategy property
 
     // Actions
     reset: () => {
@@ -286,13 +283,11 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
       }
     },
 
-    // Replace the broken setDispatchStrategy function in your simulationStore.ts with this:
-
     setDispatchStrategy: (dispatchStrategy: DispatchStrategy) => {
       try {
-        const { settings, buildingSpecificSettings } = get();
+        const { settings, managers } = get();
 
-        // Update the global settings with new dispatch strategy
+        // Update the settings
         const updatedSettings = {
           ...settings,
           buildings: {
@@ -301,28 +296,32 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
           },
         };
 
-        // Reinitialize managers with new dispatch strategy
-        const newManagers = _initManagers(
-          updatedSettings,
-          buildingSpecificSettings
-        );
-
-        // Update managers to use new dispatch strategy
-        newManagers.forEach((manager) => {
+        // Update existing managers' dispatch strategy
+        managers.forEach((manager) => {
           if (
             manager.setDispatchStrategy &&
             typeof manager.setDispatchStrategy === "function"
           ) {
+            console.log(
+              `Setting dispatch strategy for manager ${manager.id} to ${dispatchStrategy}`
+            );
+
             manager.setDispatchStrategy(dispatchStrategy);
           }
         });
 
+        // Update the store with new settings
         set({
           settings: updatedSettings,
-          managers: newManagers,
-          dispatchStrategy: dispatchStrategy,
-          resetCounter: get().resetCounter + 1,
+          managers: [...managers], // Trigger reactivity
         });
+
+        // Persist to localStorage
+        try {
+          localStorage.setItem("appSettings", JSON.stringify(updatedSettings));
+        } catch (e) {
+          console.error("Failed to save settings to localStorage:", e);
+        }
       } catch (error) {
         console.error("Error updating dispatch strategy:", error);
       }
@@ -475,6 +474,16 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
           isPaused: false,
           resetCounter: get().resetCounter + 1,
         });
+
+        // Add localStorage persistence
+        try {
+          localStorage.setItem(
+            "appSettings",
+            JSON.stringify(validatedSettings)
+          );
+        } catch (e) {
+          console.error("Failed to save settings to localStorage:", e);
+        }
       } catch (error) {
         console.error("Error updating global settings:", error);
       }

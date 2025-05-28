@@ -69,17 +69,37 @@ const BuildingConfigDialog: React.FC<BuildingConfigDialogProps> = ({
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  // Ensure dispatchStrategy is never null
-  const settingsToUpdate = {
-    ...formData,
-    dispatchStrategy: formData.dispatchStrategy || DispatchStrategy.ETA_ONLY // or whatever default you want
+    e.preventDefault();
+    
+    // Get current effective settings to compare
+    const currentEffective = getEffective();
+    
+    // Ensure dispatchStrategy is never null
+    const settingsToUpdate = {
+      ...formData,
+      dispatchStrategy: formData.dispatchStrategy || DispatchStrategy.ETA_ONLY
+    };
+    
+    // Check if dispatch strategy changed
+    const dispatchStrategyChanged = currentEffective.dispatchStrategy !== settingsToUpdate.dispatchStrategy;
+    
+    // Update building settings first
+    updateBuildingSettings(buildingIndex, settingsToUpdate);
+    
+    // If dispatch strategy changed, apply it immediately to the specific building's manager
+    if (dispatchStrategyChanged) {
+      // Get the manager for this specific building and update its dispatch strategy
+      const managers = useSimulationStore.getState().managers;
+      const manager = managers[buildingIndex];
+      
+      if (manager && manager.setDispatchStrategy && typeof manager.setDispatchStrategy === "function") {
+        console.log(`Setting dispatch strategy for building ${buildingIndex + 1} to ${settingsToUpdate.dispatchStrategy}`);
+        manager.setDispatchStrategy(settingsToUpdate.dispatchStrategy);
+      }
+    }
+    
+    onClose();
   };
-  
-  updateBuildingSettings(buildingIndex, settingsToUpdate);
-  onClose();
-};
 
   const handleReset = () => {
     updateBuildingSettings(buildingIndex, null);

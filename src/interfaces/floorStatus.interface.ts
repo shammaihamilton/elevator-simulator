@@ -1,8 +1,8 @@
-// import { RequestStatus } from '../enums/requestStatus.enum';
+import { RequestStatus } from "@/types/enums";
 
 
-interface FloorStatus {
-//   requestStatus: RequestStatus;
+export interface FloorStatus {
+  requestStatus: RequestStatus;
   etaSeconds: number | null;
   isElevatorServicing: boolean;
 }
