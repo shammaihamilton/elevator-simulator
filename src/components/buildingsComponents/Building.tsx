@@ -62,7 +62,7 @@ const Building: React.FC<BuildingProps> = ({ buildingIndex }) => {
       {/* Quick facts */}
       <div className={styles.facts}>
         <div>
-          <strong>Floors:</strong> {floorsPerBuilding}
+          <strong >Floors:</strong> {floorsPerBuilding}
         </div>
         <div>
           <strong>Elevators:</strong> {elevatorsPerBuilding}
@@ -91,7 +91,7 @@ const Building: React.FC<BuildingProps> = ({ buildingIndex }) => {
         <div
           className={styles.elevators}
           style={{
-            display: "flex", // ← pure flex row of shafts
+            display: "flex",
             gap: "1rem",
           }}
         >
@@ -100,9 +100,8 @@ const Building: React.FC<BuildingProps> = ({ buildingIndex }) => {
               key={`${elevator.id}-${resetCounter}`}
               className={styles.elevatorSlot}
               style={{
-                flex: "0 0 80px", // fixed shaft width
-                position: "relative", // so your ElevatorVisual can absolutely position itself inside
-                
+                flex: "0 0 80px", 
+                position: "relative", 
               }}
               ref={(el) => {
                 slotRefs.current[elevator.id] = el;
