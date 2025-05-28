@@ -331,7 +331,7 @@ Built by **Shammai Hamilton**, 2025.
 
 ## License
 
-MIT License
+
 
 ---
 
