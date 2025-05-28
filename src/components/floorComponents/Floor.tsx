@@ -39,10 +39,10 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
       useMemo(() => {
         const backgroundColor =
           isElevatorServicing || requestStatus === RequestStatus.IN_TRANSIT
-            ? "#D4EFDF" // Green for arrived
+            ? "#D4EFDF" 
             : requestStatus === RequestStatus.WAITING_FOR_PICKUP
-            ? "" // Yellow for waiting
-            : "transparent"; // Default
+            ? "" 
+            : "transparent"; 
 
         const buttonText =
           isElevatorServicing || requestStatus === RequestStatus.IN_TRANSIT
@@ -53,10 +53,10 @@ const Floor = React.forwardRef<HTMLDivElement, FloorProps>(
 
         const buttonColor =
           isElevatorServicing || requestStatus === RequestStatus.IN_TRANSIT
-            ? "#2ECC71" // Green
+            ? "#2ECC71" 
             : requestStatus === RequestStatus.WAITING_FOR_PICKUP
-            ? "#F39C12" // Orange
-            : "#3498DB"; // Blue
+            ? "#F39C12"
+            : "#3498DB"; 
 
         const isButtonDisabled =
           requestStatus !== RequestStatus.PENDING_ASSIGNMENT;

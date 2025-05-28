@@ -176,7 +176,7 @@ const simulationCreator: StateCreator<SimulationStore> = (set, get) => {
 
       const { floorsPerBuilding } = getEffectiveSettingsForBuilding(b);
 
-      for (let f = 1; f <= floorsPerBuilding; f++) {
+      for (let f = 0; f <= floorsPerBuilding; f++) {
         const key = `${b}-${f}`;
 
         // Check if elevator is servicing this floor
