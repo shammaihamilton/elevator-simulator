@@ -5,7 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import GlobalConfigPage from './pages/GlobalConfigPage';
 import SimulationPage from './pages/SimulationPage';
-import Layout from './components/Layout';
+import Layout from './Layout/Layout';
 
 
 
