@@ -2,6 +2,8 @@
 
 A TypeScript + React-based elevator system simulation with modular architecture, real-time animations, and intelligent elevator dispatching.
 
+🚀 **[Live Demo](https://my-elevator.netlify.app/)** - Try the simulation online!
+
 ---
 
 ## Key Functionality
